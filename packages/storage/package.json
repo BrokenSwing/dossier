@@ -1,0 +1,24 @@
+{
+  "name": "@dossier/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@dossier/shared": "workspace:*",
+    "effect": "3.21.1",
+    "@effect/platform": "0.96.0",
+    "@effect/rpc": "0.75.0",
+    "@effect/sql-sqlite-node": "0.52.0",
+    "argon2": "^0.41.0",
+    "jsonwebtoken": "^9.0.0",
+    "otplib": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.0",
+    "typescript": "^5.7.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "node --watch dist/main.js"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@dossier/compute",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@dossier/shared": "workspace:*",
+    "effect": "3.21.1",
+    "@effect/platform": "0.96.0",
+    "@effect/rpc": "0.75.0",
+    "archiver": "^7.0.0",
+    "pdf-lib": "^1.17.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.0",
+    "typescript": "^5.7.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "node --watch dist/main.js"
+  }
+}
