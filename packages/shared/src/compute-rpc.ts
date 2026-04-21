@@ -1,15 +1,10 @@
-import * as Context from "effect/Context"
-import * as Rpc from "@effect/rpc/Rpc"
-import * as RpcGroup from "@effect/rpc/RpcGroup"
-import * as RpcMiddleware from "@effect/rpc/RpcMiddleware"
-import * as Schema from "effect/Schema"
-import {
-  DocumentId,
-  UserId,
-  ExportFormat,
-  ExportStructure,
-  KeyRotationProgress,
-} from "./domain.js"
+import * as Rpc from "@effect/rpc/Rpc";
+import * as RpcGroup from "@effect/rpc/RpcGroup";
+import * as RpcMiddleware from "@effect/rpc/RpcMiddleware";
+import * as Context from "effect/Context";
+import * as Schema from "effect/Schema";
+
+import { DocumentId, UserId, ExportFormat, ExportStructure, KeyRotationProgress } from "./domain.js";
 import {
   InvalidSessionError,
   NotFoundError,
@@ -18,7 +13,7 @@ import {
   EncryptionFailedError,
   WatermarkFailedError,
   ArchiveFailedError,
-} from "./errors.js"
+} from "./errors.js";
 
 // --- Auth context (injected by middleware) ---
 
@@ -29,12 +24,12 @@ export class ComputeAuthContext extends Context.Tag("@dossier/compute/AuthContex
 
 // --- Middleware ---
 
-export class ComputeAuth extends RpcMiddleware.Tag<ComputeAuth>()(
-  "@dossier/compute/ComputeAuth",
-  { provides: ComputeAuthContext, failure: InvalidSessionError }
-) {}
+export class ComputeAuth extends RpcMiddleware.Tag<ComputeAuth>()("@dossier/compute/ComputeAuth", {
+  provides: ComputeAuthContext,
+  failure: InvalidSessionError,
+}) {}
 
-export const COMPUTE_SESSION_HEADER = "x-dossier-session" as const
+export const COMPUTE_SESSION_HEADER = "x-dossier-session" as const;
 
 // --- Compute RPCs (all authenticated) ---
 // Note: file upload is NOT an RPC — the compute service exposes POST /upload
@@ -81,5 +76,5 @@ export class ComputeRpcs extends RpcGroup.make(
     success: KeyRotationProgress,
     error: Schema.Union(NotFoundError, DecryptionFailedError, EncryptionFailedError, InternalError),
     stream: true,
-  })
+  }),
 ).middleware(ComputeAuth) {}

@@ -9,6 +9,7 @@
 **so that** I have a place to group related documents for a specific purpose (e.g. a client dossier).
 
 ### Acceptance criteria
+
 - User provides a name for the collection (non-empty, reasonable length).
 - User can optionally select a parent collection; if none is selected, the collection is created at the root level.
 - Collection names must be unique within their parent (siblings cannot share a name; same name is allowed in different parents).
@@ -23,6 +24,7 @@
 **so that** it is included in that collection's views and exports.
 
 ### Acceptance criteria
+
 - A document can belong to multiple collections simultaneously.
 - User can add a document from the document list, the document detail view, or from within the collection view.
 - The collection member count is updated immediately.
@@ -36,6 +38,7 @@
 **so that** it no longer appears in that collection without deleting it from my vault.
 
 ### Acceptance criteria
+
 - Removing a document from a collection does not delete the document.
 - The document remains in other collections it belongs to.
 - The document continues to appear in the main document list and tag views.
@@ -50,6 +53,7 @@
 **so that** I can review, manage, or prepare an export of that group.
 
 ### Acceptance criteria
+
 - The collection view shows sub-collections and direct member documents.
 - Sub-collections are displayed before documents.
 - A breadcrumb trail shows the current position in the hierarchy (e.g. `House Project / Contracts / 2024`).
@@ -67,6 +71,7 @@
 **so that** my collection tree stays clean.
 
 ### Acceptance criteria
+
 - User is prompted to confirm deletion.
 - Deleting a collection removes the collection, its sub-collections (recursively), and all membership records.
 - **Documents are not deleted.** They remain in the vault and in any other collections they belong to.
@@ -79,6 +84,7 @@
 **so that** I can reorganize my folder hierarchy without recreating it.
 
 ### Acceptance criteria
+
 - User can select a new parent collection for any existing collection, or move it to the root.
 - A collection cannot be moved into one of its own descendants (circular nesting is rejected).
 - The breadcrumb and navigation update immediately to reflect the new position.
@@ -93,6 +99,7 @@
 **so that** exports from that collection are automatically watermarked without manual configuration each time.
 
 ### Acceptance criteria
+
 - From the collection settings, user can define a text watermark (see S-WM-1 for watermark definition details).
 - The watermark configuration is stored as metadata on the collection (not embedded in the documents).
 - A collection may have no watermark (default: no watermark).

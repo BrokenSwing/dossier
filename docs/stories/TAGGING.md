@@ -9,6 +9,7 @@
 **so that** it is immediately discoverable without a separate step.
 
 ### Acceptance criteria
+
 - During the upload flow, user can type or select tags to apply.
 - Tags are free-form text labels (case-insensitive matching recommended).
 - Existing tags are suggested via autocomplete as the user types.
@@ -24,6 +25,7 @@
 **so that** I can correct or evolve my organization scheme over time.
 
 ### Acceptance criteria
+
 - User can open a tag editor for any document (from the list or detail view).
 - Tags can be added (with autocomplete from existing tags) and removed individually.
 - Changes are saved immediately on confirmation.
@@ -38,6 +40,7 @@
 **so that** I can find related documents quickly.
 
 ### Acceptance criteria
+
 - A tag index view lists all tags with their document counts.
 - Clicking a tag shows a filtered document list containing only documents with that tag.
 - The filtered list supports the same sorting and quick-actions as the main document list (S-DOC-5).
@@ -51,6 +54,7 @@
 **so that** I can narrow down results when I have many documents.
 
 ### Acceptance criteria
+
 - User can select multiple tags simultaneously as filter criteria.
 - The filter returns documents that match **all** selected tags (AND semantics).
 - Active tag filters are shown clearly and can be removed individually.

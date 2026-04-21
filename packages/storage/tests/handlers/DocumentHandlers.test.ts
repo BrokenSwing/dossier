@@ -1,36 +1,26 @@
-import { describe, expect, layer } from "@effect/vitest";
-import * as Effect from "effect/Effect";
-import * as Stream from "effect/Stream";
-import * as Chunk from "effect/Chunk";
-import * as Layer from "effect/Layer";
+import { StorageAuth, StorageDocumentRpcs, DocumentId, CollectionId } from "@dossier/shared";
 import * as RpcTest from "@effect/rpc/RpcTest";
-import {
-  StorageAuth,
-  StorageDocumentRpcs,
-  DocumentId,
-  CollectionId,
-} from "@dossier/shared";
+import { describe, expect, layer } from "@effect/vitest";
+import * as Chunk from "effect/Chunk";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Stream from "effect/Stream";
+
 import { documentHandlers } from "../../src/handlers/DocumentHandlers.js";
 import { BlobStore } from "../../src/services/BlobStore.js";
-import * as UserSql from "../../src/sql/UserSql.js";
 import * as CollectionSql from "../../src/sql/CollectionSql.js";
+import * as UserSql from "../../src/sql/UserSql.js";
 import { TEST_USER, TEST_USER_ID, TestSqlLayer } from "../setup.js";
 import { FakeStorageAuthLayer, FakeBlobStoreLayer } from "./setup.js";
 
 const group = StorageDocumentRpcs.middleware(StorageAuth);
 
-const BaseLayer = Layer.mergeAll(
-  FakeStorageAuthLayer,
-  FakeBlobStoreLayer,
-  TestSqlLayer,
-);
+const BaseLayer = Layer.mergeAll(FakeStorageAuthLayer, FakeBlobStoreLayer, TestSqlLayer);
 
 const DocumentTestLayer = Layer.mergeAll(
   documentHandlers.pipe(Layer.provide(BaseLayer)),
   BaseLayer,
-  Layer.effectDiscard(UserSql.insertUser(TEST_USER)).pipe(
-    Layer.provide(TestSqlLayer),
-  ),
+  Layer.effectDiscard(UserSql.insertUser(TEST_USER)).pipe(Layer.provide(TestSqlLayer)),
 );
 
 layer(DocumentTestLayer)("DocumentHandlers", (it) => {
@@ -55,9 +45,7 @@ layer(DocumentTestLayer)("DocumentHandlers", (it) => {
     it.scoped("returns NotFoundError for unknown document", () =>
       Effect.gen(function* () {
         const client = yield* RpcTest.makeClient(group);
-        const exit = yield* Effect.exit(
-          client.GetDocumentMeta({ documentId: "no-such-doc" as DocumentId }),
-        );
+        const exit = yield* Effect.exit(client.GetDocumentMeta({ documentId: "no-such-doc" as DocumentId }));
         expect(exit._tag).toBe("Failure");
       }),
     );
@@ -94,9 +82,7 @@ layer(DocumentTestLayer)("DocumentHandlers", (it) => {
           documentId,
           tagNames: ["new-a", "new-b"],
         });
-        expect(tags.map((t) => t.name)).toEqual(
-          expect.arrayContaining(["new-a", "new-b"]),
-        );
+        expect(tags.map((t) => t.name)).toEqual(expect.arrayContaining(["new-a", "new-b"]));
         expect(tags).toHaveLength(2);
       }),
     );
@@ -152,9 +138,7 @@ layer(DocumentTestLayer)("DocumentHandlers", (it) => {
     it.scoped("returns NotFoundError for unknown document", () =>
       Effect.gen(function* () {
         const client = yield* RpcTest.makeClient(group);
-        const exit = yield* Effect.exit(
-          client.DeleteDocument({ documentId: "ghost" as DocumentId }),
-        );
+        const exit = yield* Effect.exit(client.DeleteDocument({ documentId: "ghost" as DocumentId }));
         expect(exit._tag).toBe("Failure");
       }),
     );
@@ -176,12 +160,8 @@ layer(DocumentTestLayer)("DocumentHandlers", (it) => {
         const payload = new Uint8Array([1, 2, 3, 4]);
         yield* blobStore.write(blobKey, payload);
 
-        const chunks = yield* Stream.runCollect(
-          client.DownloadDocumentBlob({ documentId }),
-        );
-        const merged = new Uint8Array(
-          Chunk.toArray(chunks).flatMap((c) => Array.from(c)),
-        );
+        const chunks = yield* Stream.runCollect(client.DownloadDocumentBlob({ documentId }));
+        const merged = new Uint8Array(Chunk.toArray(chunks).flatMap((c) => Array.from(c)));
         expect(merged).toEqual(payload);
       }),
     );

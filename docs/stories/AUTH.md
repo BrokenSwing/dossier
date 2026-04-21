@@ -9,6 +9,7 @@
 **so that** I have a secure, encrypted vault.
 
 ### Acceptance criteria
+
 - User provides a username and password.
 - Client derives a KEK from the password using a strong KDF (e.g. Argon2id).
 - Client generates a fresh random DEK.
@@ -27,6 +28,7 @@
 **so that** I can access my vault for the session.
 
 ### Acceptance criteria
+
 - User enters username and password.
 - Server returns the stored `encrypted_dek` and `kdf_params` for the user.
 - Client derives the KEK from the password using the stored KDF params.
@@ -44,6 +46,7 @@
 **so that** the DEK is cleared from memory and my vault is protected.
 
 ### Acceptance criteria
+
 - **Lock:** Clears the DEK from client memory. The session token is preserved. User must re-enter their password (and optionally TOTP, TBD) to unlock and re-derive the DEK.
 - **Logout:** Clears the DEK from client memory and invalidates the session token on the server.
 - After lock or logout, no document operations are possible until re-authentication.
@@ -58,6 +61,7 @@
 **so that** I can rotate my credentials without affecting my documents.
 
 ### Acceptance criteria
+
 - User provides their current password and a new password.
 - Client verifies the current password can successfully decrypt the DEK.
 - Client derives a new KEK from the new password.
@@ -76,6 +80,7 @@
 **so that** the compromised key can no longer decrypt my documents.
 
 ### Acceptance criteria
+
 - User initiates key rotation (treated as an admin/power-user operation).
 - Client generates a new random DEK.
 - For every document in the vault:

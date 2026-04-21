@@ -1,11 +1,5 @@
-import { SqlClient } from "@effect/sql/SqlClient";
-import * as argon2 from "argon2";
 import * as crypto from "node:crypto";
-import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
-import * as Redacted from "effect/Redacted";
-import * as jwt from "jsonwebtoken";
-import { authenticator } from "otplib";
+
 import {
   StorageAuthRpcs,
   InternalError,
@@ -16,6 +10,14 @@ import {
   UsernameTakenError,
   KdfParams,
 } from "@dossier/shared";
+import { SqlClient } from "@effect/sql/SqlClient";
+import * as argon2 from "argon2";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
+import * as jwt from "jsonwebtoken";
+import { authenticator } from "otplib";
+
 import { AppConfig } from "../Config.js";
 import * as UserSql from "../sql/UserSql.js";
 
@@ -27,10 +29,7 @@ const fakeSalt = (secret: string, username: string): string => {
   return hmac.digest("hex");
 };
 
-export const makeAuthHandlerImpl = (config: {
-  jwtSecret: Redacted.Redacted<string>;
-  jwtExpirySeconds: number;
-}) =>
+export const makeAuthHandlerImpl = (config: { jwtSecret: Redacted.Redacted<string>; jwtExpirySeconds: number }) =>
   StorageAuthRpcs.of({
     GetKdfParams: ({ username }) =>
       Effect.gen(function* () {
@@ -40,8 +39,7 @@ export const makeAuthHandlerImpl = (config: {
           const user = userOpt.value;
           const kdfParams = yield* Effect.try({
             try: () => JSON.parse(user.kdf_params) as KdfParams,
-            catch: () =>
-              new InternalError({ message: "Failed to parse kdf_params" }),
+            catch: () => new InternalError({ message: "Failed to parse kdf_params" }),
           });
           return {
             kdfParams,
@@ -70,9 +68,7 @@ export const makeAuthHandlerImpl = (config: {
       Effect.gen(function* () {
         const existing = yield* UserSql.findByUsername(username);
         if (Option.isSome(existing)) {
-          return yield* Effect.fail(
-            new UsernameTakenError({ message: "Username already taken" }),
-          );
+          return yield* Effect.fail(new UsernameTakenError({ message: "Username already taken" }));
         }
 
         const passwordHash = yield* Effect.tryPromise({
@@ -104,9 +100,7 @@ export const makeAuthHandlerImpl = (config: {
       Effect.gen(function* () {
         const userOpt = yield* UserSql.findByUsername(username);
         if (Option.isNone(userOpt)) {
-          return yield* Effect.fail(
-            new NotFoundError({ message: "User not found" }),
-          );
+          return yield* Effect.fail(new NotFoundError({ message: "User not found" }));
         }
         const user = userOpt.value;
 
@@ -165,9 +159,7 @@ export const makeAuthHandlerImpl = (config: {
         }
 
         const sessionId = crypto.randomUUID();
-        const expiresAt = new Date(
-          Date.now() + config.jwtExpirySeconds * 1000,
-        ).toISOString();
+        const expiresAt = new Date(Date.now() + config.jwtExpirySeconds * 1000).toISOString();
 
         yield* UserSql.insertSession({
           id: sessionId,
@@ -175,11 +167,7 @@ export const makeAuthHandlerImpl = (config: {
           expires_at: expiresAt,
         });
 
-        const sessionToken = jwt.sign(
-          { sub: user.id, jti: sessionId },
-          Redacted.value(config.jwtSecret),
-          { expiresIn: config.jwtExpirySeconds },
-        );
+        const sessionToken = jwt.sign({ sub: user.id, jti: sessionId }, Redacted.value(config.jwtSecret), { expiresIn: config.jwtExpirySeconds });
 
         return {
           sessionToken,

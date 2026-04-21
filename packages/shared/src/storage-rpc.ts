@@ -1,8 +1,9 @@
-import * as Context from "effect/Context"
-import * as Rpc from "@effect/rpc/Rpc"
-import * as RpcGroup from "@effect/rpc/RpcGroup"
-import * as RpcMiddleware from "@effect/rpc/RpcMiddleware"
-import * as Schema from "effect/Schema"
+import * as Rpc from "@effect/rpc/Rpc";
+import * as RpcGroup from "@effect/rpc/RpcGroup";
+import * as RpcMiddleware from "@effect/rpc/RpcMiddleware";
+import * as Context from "effect/Context";
+import * as Schema from "effect/Schema";
+
 import {
   DocumentId,
   TagId,
@@ -15,7 +16,7 @@ import {
   Collection,
   ListDocumentsParams,
   DocumentListPage,
-} from "./domain.js"
+} from "./domain.js";
 import {
   InvalidSessionError,
   NotFoundError,
@@ -27,23 +28,20 @@ import {
   UsernameTakenError,
   CircularCollectionError,
   CollectionHasChildrenError,
-} from "./errors.js"
+} from "./errors.js";
 
 // --- Auth context (injected by middleware) ---
 
-export class AuthContext extends Context.Tag("@dossier/storage/AuthContext")<
-  AuthContext,
-  { readonly userId: UserId }
->() {}
+export class AuthContext extends Context.Tag("@dossier/storage/AuthContext")<AuthContext, { readonly userId: UserId }>() {}
 
 // --- Middleware ---
 
-export class StorageAuth extends RpcMiddleware.Tag<StorageAuth>()(
-  "@dossier/storage/StorageAuth",
-  { provides: AuthContext, failure: InvalidSessionError }
-) {}
+export class StorageAuth extends RpcMiddleware.Tag<StorageAuth>()("@dossier/storage/StorageAuth", {
+  provides: AuthContext,
+  failure: InvalidSessionError,
+}) {}
 
-export const STORAGE_SESSION_HEADER = "x-dossier-session" as const
+export const STORAGE_SESSION_HEADER = "x-dossier-session" as const;
 
 // --- Unauthenticated RPCs ---
 
@@ -60,7 +58,7 @@ export class StorageAuthRpcs extends RpcGroup.make(
   Rpc.make("Register", {
     payload: {
       username: Schema.String,
-      authKey: Schema.String,   // HKDF("auth", Argon2id(password, kdfParams)) — never the raw password
+      authKey: Schema.String, // HKDF("auth", Argon2id(password, kdfParams)) — never the raw password
       kdfParams: KdfParams,
       encryptedDek: Schema.String,
       dekIv: Schema.String,
@@ -79,7 +77,7 @@ export class StorageAuthRpcs extends RpcGroup.make(
   Rpc.make("Login", {
     payload: {
       username: Schema.String,
-      authKey: Schema.String,   // HKDF("auth", Argon2id(password, kdfParams)) — never the raw password
+      authKey: Schema.String, // HKDF("auth", Argon2id(password, kdfParams)) — never the raw password
       totpCode: Schema.String,
     },
     success: Schema.Struct({
@@ -88,7 +86,7 @@ export class StorageAuthRpcs extends RpcGroup.make(
       dekIv: Schema.String,
     }),
     error: Schema.Union(InvalidCredentialsError, TotpInvalidError, TotpNotConfirmedError, InternalError),
-  })
+  }),
 ) {}
 
 // --- Session RPCs (authenticated) ---
@@ -98,7 +96,7 @@ export class StorageSessionRpcs extends RpcGroup.make(
     payload: Schema.Void,
     success: Schema.Void,
     error: InternalError,
-  })
+  }),
 ) {}
 
 // --- Document RPCs (authenticated) ---
@@ -165,7 +163,7 @@ export class StorageDocumentRpcs extends RpcGroup.make(
     },
     success: Schema.Void,
     error: Schema.Union(NotFoundError, InternalError),
-  })
+  }),
 ) {}
 
 // --- Tag RPCs (authenticated) ---
@@ -180,7 +178,7 @@ export class StorageTagRpcs extends RpcGroup.make(
     payload: { tagId: TagId },
     success: Schema.Void,
     error: Schema.Union(NotFoundError, InternalError),
-  })
+  }),
 ) {}
 
 // --- Collection RPCs (authenticated) ---
@@ -238,7 +236,7 @@ export class StorageCollectionRpcs extends RpcGroup.make(
     payload: { collectionId: CollectionId, documentId: DocumentId },
     success: Schema.Void,
     error: Schema.Union(NotFoundError, InternalError),
-  })
+  }),
 ) {}
 
 // --- Account RPCs (authenticated) ---
@@ -246,9 +244,9 @@ export class StorageCollectionRpcs extends RpcGroup.make(
 export class StorageAccountRpcs extends RpcGroup.make(
   Rpc.make("ChangePassword", {
     payload: {
-      oldAuthKey: Schema.String,    // proves identity against stored hash
-      newAuthKey: Schema.String,    // new auth key derived from new password + newKdfParams
-      newKdfParams: KdfParams,      // client-generated (new salt)
+      oldAuthKey: Schema.String, // proves identity against stored hash
+      newAuthKey: Schema.String, // new auth key derived from new password + newKdfParams
+      newKdfParams: KdfParams, // client-generated (new salt)
       newEncryptedDek: Schema.String,
       newDekIv: Schema.String,
     },
@@ -262,7 +260,7 @@ export class StorageAccountRpcs extends RpcGroup.make(
     },
     success: Schema.Void,
     error: InternalError,
-  })
+  }),
 ) {}
 
 // --- Root group (merges all, applies auth middleware where required) ---

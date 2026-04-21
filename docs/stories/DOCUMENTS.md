@@ -9,6 +9,7 @@
 **so that** it is securely stored in my vault.
 
 ### Acceptance criteria
+
 - Supported formats: PDF, JPG, PNG. Other formats are rejected with a clear error message.
 - Client encrypts the file with the session DEK before upload.
 - User can provide a name for the document (defaults to the original filename if not provided).
@@ -26,6 +27,7 @@
 **so that** I can verify its contents without downloading it.
 
 ### Acceptance criteria
+
 - Client fetches the encrypted document from the server.
 - Client decrypts it with the session DEK in memory.
 - The decrypted content is rendered in-browser (PDF viewer, or image display).
@@ -42,6 +44,7 @@
 **so that** I can keep my vault organized without re-uploading.
 
 ### Acceptance criteria
+
 - User can edit the display name of any document.
 - The new name is validated (non-empty, reasonable length).
 - The rename is reflected immediately in all views (list, collections, tags).
@@ -56,6 +59,7 @@
 **so that** it is permanently removed from my vault.
 
 ### Acceptance criteria
+
 - User is prompted to confirm deletion before proceeding.
 - Deletion removes the encrypted file and all associated metadata (tags, collection memberships) from the server.
 - The document no longer appears in any list, tag view, or collection.
@@ -70,6 +74,7 @@
 **so that** I can find and access them quickly.
 
 ### Acceptance criteria
+
 - The document list shows: name, format/type indicator, upload date, and assigned tags.
 - Documents can be sorted by name or upload date (ascending/descending).
 - A search/filter bar allows filtering by name substring.

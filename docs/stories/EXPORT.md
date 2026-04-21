@@ -9,6 +9,7 @@
 **so that** I can share the full dossier with a third party.
 
 ### Acceptance criteria
+
 - User initiates export from the collection view.
 - All documents in the collection are included, recursively across all sub-collections.
 - The export modal offers a structure choice:
@@ -28,6 +29,7 @@
 **so that** I can exclude irrelevant or sensitive files from a particular export without removing them from the collection.
 
 ### Acceptance criteria
+
 - Before confirming the export, user sees the full recursive document tree grouped by sub-collection.
 - All documents are selected by default.
 - User can deselect individual documents or an entire sub-collection at once.
@@ -43,6 +45,7 @@
 **so that** I can create one-off exports without building a dedicated collection.
 
 ### Acceptance criteria
+
 - User can add any document to the export basket from any view (document list, tag view, collection view).
 - The basket is visible as a persistent element (e.g. a sidebar or floating cart) while documents are in it.
 - User can review and remove documents from the basket before exporting.
@@ -60,6 +63,7 @@
 **so that** I can produce a format suitable for the recipient's platform.
 
 ### Acceptance criteria
+
 - In the export flow (both collection and basket), user can select the archive format: ZIP or TAR.GZ.
 - The selection defaults to ZIP.
 - The chosen format is applied to the generated archive.

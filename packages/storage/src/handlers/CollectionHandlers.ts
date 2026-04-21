@@ -1,6 +1,5 @@
 import * as crypto from "node:crypto";
-import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
+
 import {
   StorageCollectionRpcs,
   StorageAuth,
@@ -11,12 +10,13 @@ import {
   CircularCollectionError,
   CollectionHasChildrenError,
 } from "@dossier/shared";
-import * as CollectionSql from "../sql/CollectionSql.js";
 import { SqlClient } from "@effect/sql/SqlClient";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 
-export const collectionHandlers = StorageCollectionRpcs.middleware(
-  StorageAuth,
-).toLayer({
+import * as CollectionSql from "../sql/CollectionSql.js";
+
+export const collectionHandlers = StorageCollectionRpcs.middleware(StorageAuth).toLayer({
   ListCollections: () =>
     Effect.gen(function* () {
       const { userId } = yield* AuthContext;
@@ -45,10 +45,7 @@ export const collectionHandlers = StorageCollectionRpcs.middleware(
         }
       } else {
         // D6: root-level name uniqueness
-        const conflict = yield* CollectionSql.checkRootNameConflict(
-          userId,
-          name,
-        );
+        const conflict = yield* CollectionSql.checkRootNameConflict(userId, name);
         if (conflict) {
           return yield* new ConflictError({ message: "Collection name already exists at root" });
         }
@@ -75,11 +72,7 @@ export const collectionHandlers = StorageCollectionRpcs.middleware(
       // Check sibling name conflict if name is changing
       if (name !== undefined && name !== current.name) {
         if (current.parentId === null) {
-          const conflict = yield* CollectionSql.checkRootNameConflict(
-            userId,
-            name,
-            collectionId,
-          );
+          const conflict = yield* CollectionSql.checkRootNameConflict(userId, name, collectionId);
           if (conflict) {
             return yield* new ConflictError({ message: "Collection name already exists at root" });
           }
@@ -130,10 +123,7 @@ export const collectionHandlers = StorageCollectionRpcs.middleware(
         return { deletedCount: 1 };
       }
 
-      const count = yield* CollectionSql.deleteCollectionRecursive(
-        collectionId,
-        userId,
-      );
+      const count = yield* CollectionSql.deleteCollectionRecursive(collectionId, userId);
       return { deletedCount: count };
     }),
 
@@ -155,21 +145,13 @@ export const collectionHandlers = StorageCollectionRpcs.middleware(
         }
 
         // D7: circular detection
-        const isCircular = yield* CollectionSql.checkCircular(
-          collectionId,
-          newParentId,
-          userId,
-        );
+        const isCircular = yield* CollectionSql.checkCircular(collectionId, newParentId, userId);
         if (isCircular) {
           return yield* new CircularCollectionError({ message: "Moving would create a circular reference" });
         }
       } else {
         // D6: root-level name conflict
-        const conflict = yield* CollectionSql.checkRootNameConflict(
-          userId,
-          opt.value.name,
-          collectionId,
-        );
+        const conflict = yield* CollectionSql.checkRootNameConflict(userId, opt.value.name, collectionId);
         if (conflict) {
           return yield* new ConflictError({ message: "Collection name already exists at root" });
         }
@@ -212,11 +194,7 @@ export const collectionHandlers = StorageCollectionRpcs.middleware(
   RemoveDocumentFromCollection: ({ collectionId, documentId }) =>
     Effect.gen(function* () {
       const { userId } = yield* AuthContext;
-      const count = yield* CollectionSql.removeDocumentFromCollection(
-        collectionId,
-        documentId,
-        userId,
-      );
+      const count = yield* CollectionSql.removeDocumentFromCollection(collectionId, documentId, userId);
       if (count === 0) {
         return yield* new NotFoundError({ message: "Document not in collection" });
       }

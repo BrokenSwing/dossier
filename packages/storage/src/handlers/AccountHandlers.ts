@@ -1,26 +1,13 @@
+import { StorageAccountRpcs, StorageAuth, AuthContext, InternalError, InvalidCredentialsError } from "@dossier/shared";
 import { SqlClient } from "@effect/sql/SqlClient";
 import * as argon2 from "argon2";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import {
-  StorageAccountRpcs,
-  StorageAuth,
-  AuthContext,
-  InternalError,
-  InvalidCredentialsError,
-} from "@dossier/shared";
+
 import * as UserSql from "../sql/UserSql.js";
 
-export const accountHandlers = StorageAccountRpcs.middleware(
-  StorageAuth,
-).toLayer({
-  ChangePassword: ({
-    oldAuthKey,
-    newAuthKey,
-    newKdfParams,
-    newEncryptedDek,
-    newDekIv,
-  }) =>
+export const accountHandlers = StorageAccountRpcs.middleware(StorageAuth).toLayer({
+  ChangePassword: ({ oldAuthKey, newAuthKey, newKdfParams, newEncryptedDek, newDekIv }) =>
     Effect.gen(function* () {
       const sql = yield* SqlClient;
       const { userId } = yield* AuthContext;
@@ -35,8 +22,7 @@ export const accountHandlers = StorageAccountRpcs.middleware(
 
       const valid = yield* Effect.tryPromise({
         try: () => argon2.verify(user.password_hash, oldAuthKey),
-        catch: (e) =>
-          new InternalError({ message: `argon2 verify failed: ${String(e)}` }),
+        catch: (e) => new InternalError({ message: `argon2 verify failed: ${String(e)}` }),
       });
       if (!valid) {
         return yield* new InvalidCredentialsError({
@@ -46,8 +32,7 @@ export const accountHandlers = StorageAccountRpcs.middleware(
 
       const newHash = yield* Effect.tryPromise({
         try: () => argon2.hash(newAuthKey, { type: argon2.argon2id }),
-        catch: (e) =>
-          new InternalError({ message: `argon2 hash failed: ${String(e)}` }),
+        catch: (e) => new InternalError({ message: `argon2 hash failed: ${String(e)}` }),
       });
 
       yield* sql

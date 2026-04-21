@@ -41,18 +41,23 @@ Dossier is a self-hosted, encrypted document vault for personal use. It lets a s
 ## 4. Core Concepts
 
 ### Document
+
 A stored file in one of the supported formats: PDF, JPG, or PNG. Each document is encrypted individually with a Document Encryption Key (DEK). Documents have a name, optional tags, and may belong to one or more collections.
 
 ### Tag
+
 A free-form label attached to one or more documents. Tags are user-defined and are the primary mechanism for cross-collection discovery.
 
 ### Collection (Folder)
+
 A named, hierarchical grouping of documents. Collections can be nested arbitrarily deep (e.g. `House Project / Contracts / 2024`). A collection may have a default watermark configuration. Documents can belong to multiple collections at any level, and deleting a collection does not delete its documents or its sub-collections.
 
 ### Watermark
+
 A text overlay applied to document pages at export time. Watermarks are configured at the collection level and can be overridden at export time. They are never stored in the encrypted document — they are applied on-the-fly during export.
 
 ### Export
+
 A downloadable archive (ZIP or TAR.GZ) containing one or more documents, optionally watermarked. Exports can be collection-based or ad-hoc (documents from anywhere in the vault added to a temporary session basket).
 
 ---
@@ -89,12 +94,14 @@ The system has three tiers. TLS is assumed on all inter-tier communication.
 ### Tier responsibilities
 
 **Browser (UI layer)**
+
 - Derives the KEK from the user's password.
 - Decrypts the DEK and holds it in session memory.
 - Renders the UI; delegates all document operations to compute.
 - In local mode, also runs the compute logic (JS/WASM) — the DEK never leaves the browser.
 
 **Compute service**
+
 - Exposes high-level operations: upload, preview, export, key rotation.
 - Receives the DEK and session token from the browser per-request.
 - Talks to storage on behalf of the user using the session token.
@@ -103,6 +110,7 @@ The system has three tiers. TLS is assumed on all inter-tier communication.
 - Can be server-hosted (VPS) or run locally in the browser — same codebase, different deployment.
 
 **Storage backend**
+
 - Authenticated blob store + metadata database.
 - Stores encrypted document blobs and the encrypted DEK.
 - Stores document metadata (name, tags, collection memberships) unencrypted.
@@ -111,23 +119,23 @@ The system has three tiers. TLS is assumed on all inter-tier communication.
 
 ### Trust model
 
-| Who operates compute | Who operates storage | What storage operator sees |
-|---|---|---|
-| Same as storage (self-hosted together) | Self | Ciphertext only |
-| User (self-hosted separately) | Third party | Ciphertext only |
-| Third party | Third party | Ciphertext only |
-| Browser (local mode) | Anyone | Ciphertext only |
+| Who operates compute                   | Who operates storage | What storage operator sees |
+| -------------------------------------- | -------------------- | -------------------------- |
+| Same as storage (self-hosted together) | Self                 | Ciphertext only            |
+| User (self-hosted separately)          | Third party          | Ciphertext only            |
+| Third party                            | Third party          | Ciphertext only            |
+| Browser (local mode)                   | Anyone               | Ciphertext only            |
 
 In all cases, the storage backend is zero-knowledge with respect to document content.
 
 ### Compute API (high-level operations)
 
-| Operation | Compute does |
-|-----------|-------------|
-| `upload(dek, file, metadata)` | Encrypt file → PUT blob to storage; write metadata |
-| `preview(dek, doc_id)` | GET blob from storage → decrypt → stream to browser |
+| Operation                                 | Compute does                                           |
+| ----------------------------------------- | ------------------------------------------------------ |
+| `upload(dek, file, metadata)`             | Encrypt file → PUT blob to storage; write metadata     |
+| `preview(dek, doc_id)`                    | GET blob from storage → decrypt → stream to browser    |
 | `export(dek, doc_ids, watermark, format)` | GET blobs → decrypt → apply watermark → stream archive |
-| `rotate_key(old_dek, new_dek)` | GET all blobs → re-encrypt → PUT all blobs |
+| `rotate_key(old_dek, new_dek)`            | GET all blobs → re-encrypt → PUT all blobs             |
 
 ---
 
@@ -167,15 +175,15 @@ TOTP is required at registration and login as a second factor. It adds a layer o
 
 ## 7. Open Questions / TBDs
 
-| # | Question | Notes |
-|---|----------|-------|
-| OQ-1 | Should folders be usable as saved export lists, or is the ad-hoc basket always ephemeral? | Currently: basket is session-only; folders may serve as persistent "export templates" — TBD |
-| OQ-2 | What KDF parameters should be used for KEK derivation? | Argon2id recommended; params TBD during implementation |
-| OQ-3 | Should watermarks support images (e.g. a logo) in addition to text? | Out of scope for v1, revisit later |
-| OQ-4 | What is the maximum supported document size? | TBD — depends on hosting constraints |
-| OQ-5 | Should the export basket be optionally saved as a collection? | Possible future feature |
-| OQ-6 | Multi-device session handling: how are DEK sessions coordinated? | Each device derives KEK independently on login; no coordination needed |
-| OQ-7 | How does the browser configure which compute endpoint to use? | Likely set once at setup time (e.g. stored in localStorage) |
-| OQ-8 | Should local mode (compute in browser) be the default, with server compute as opt-in? | TBD — affects onboarding flow |
-| OQ-9 | Watermark inheritance: does a sub-collection inherit its parent's watermark when it has none configured? | **Resolved:** No inheritance. The watermark of the exported collection is used. One watermark per export. |
-| OQ-10 | Export depth: when exporting a collection, are documents in sub-collections included? | **Resolved:** Yes, recursively. The export modal offers a choice: flatten all files into a single directory, or preserve the nested folder structure in the archive. |
+| #     | Question                                                                                                 | Notes                                                                                                                                                                |
+| ----- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OQ-1  | Should folders be usable as saved export lists, or is the ad-hoc basket always ephemeral?                | Currently: basket is session-only; folders may serve as persistent "export templates" — TBD                                                                          |
+| OQ-2  | What KDF parameters should be used for KEK derivation?                                                   | Argon2id recommended; params TBD during implementation                                                                                                               |
+| OQ-3  | Should watermarks support images (e.g. a logo) in addition to text?                                      | Out of scope for v1, revisit later                                                                                                                                   |
+| OQ-4  | What is the maximum supported document size?                                                             | TBD — depends on hosting constraints                                                                                                                                 |
+| OQ-5  | Should the export basket be optionally saved as a collection?                                            | Possible future feature                                                                                                                                              |
+| OQ-6  | Multi-device session handling: how are DEK sessions coordinated?                                         | Each device derives KEK independently on login; no coordination needed                                                                                               |
+| OQ-7  | How does the browser configure which compute endpoint to use?                                            | Likely set once at setup time (e.g. stored in localStorage)                                                                                                          |
+| OQ-8  | Should local mode (compute in browser) be the default, with server compute as opt-in?                    | TBD — affects onboarding flow                                                                                                                                        |
+| OQ-9  | Watermark inheritance: does a sub-collection inherit its parent's watermark when it has none configured? | **Resolved:** No inheritance. The watermark of the exported collection is used. One watermark per export.                                                            |
+| OQ-10 | Export depth: when exporting a collection, are documents in sub-collections included?                    | **Resolved:** Yes, recursively. The export modal offers a choice: flatten all files into a single directory, or preserve the nested folder structure in the archive. |

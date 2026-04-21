@@ -1,26 +1,26 @@
-import * as Schema from "effect/Schema"
+import * as Schema from "effect/Schema";
 
 // --- Branded IDs ---
 
-export const DocumentId = Schema.String.pipe(Schema.brand("DocumentId"))
-export const TagId = Schema.String.pipe(Schema.brand("TagId"))
-export const CollectionId = Schema.String.pipe(Schema.brand("CollectionId"))
-export const UserId = Schema.String.pipe(Schema.brand("UserId"))
-export type DocumentId = typeof DocumentId.Type
-export type TagId = typeof TagId.Type
-export type CollectionId = typeof CollectionId.Type
-export type UserId = typeof UserId.Type
+export const DocumentId = Schema.String.pipe(Schema.brand("DocumentId"));
+export const TagId = Schema.String.pipe(Schema.brand("TagId"));
+export const CollectionId = Schema.String.pipe(Schema.brand("CollectionId"));
+export const UserId = Schema.String.pipe(Schema.brand("UserId"));
+export type DocumentId = typeof DocumentId.Type;
+export type TagId = typeof TagId.Type;
+export type CollectionId = typeof CollectionId.Type;
+export type UserId = typeof UserId.Type;
 
 // --- Enums / Literals ---
 
-export const DocumentFormat = Schema.Literal("pdf", "jpg", "png")
-export type DocumentFormat = typeof DocumentFormat.Type
+export const DocumentFormat = Schema.Literal("pdf", "jpg", "png");
+export type DocumentFormat = typeof DocumentFormat.Type;
 
-export const ExportFormat = Schema.Literal("zip", "tar.gz")
-export type ExportFormat = typeof ExportFormat.Type
+export const ExportFormat = Schema.Literal("zip", "tar.gz");
+export type ExportFormat = typeof ExportFormat.Type;
 
-export const ExportStructure = Schema.Literal("flatten", "preserve")
-export type ExportStructure = typeof ExportStructure.Type
+export const ExportStructure = Schema.Literal("flatten", "preserve");
+export type ExportStructure = typeof ExportStructure.Type;
 
 // --- Value schemas ---
 

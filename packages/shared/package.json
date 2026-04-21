@@ -6,17 +6,17 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "dependencies": {
-    "effect": "3.21.1",
-    "@effect/platform": "0.96.0",
-    "@effect/rpc": "0.75.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.7.0",
-    "@effect/language-service": "^0.85.1"
-  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "prepare": "effect-language-service patch"
+  },
+  "dependencies": {
+    "@effect/platform": "0.96.0",
+    "@effect/rpc": "0.75.0",
+    "effect": "3.21.1"
+  },
+  "devDependencies": {
+    "@effect/language-service": "^0.85.1",
+    "typescript": "^5.7.0"
   }
 }
