@@ -12,9 +12,11 @@
     "@effect/rpc": "0.75.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "@effect/language-service": "^0.85.1"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "effect-language-service patch"
   }
 }

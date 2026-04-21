@@ -14,10 +14,12 @@
   },
   "devDependencies": {
     "@types/archiver": "^6.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "@effect/language-service": "^0.85.1"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "node --watch dist/main.js"
+    "dev": "node --watch dist/main.js",
+    "prepare": "effect-language-service patch"
   }
 }
