@@ -57,6 +57,9 @@ importers:
       '@effect/language-service':
         specifier: ^0.85.1
         version: 0.85.1
+      '@effect/vitest':
+        specifier: 0.29.0
+        version: 0.29.0(effect@3.21.1)(vitest@3.2.4(@types/node@25.6.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.32.0))
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.2.4(vite@6.4.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0))
