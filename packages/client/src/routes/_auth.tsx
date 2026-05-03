@@ -1,6 +1,10 @@
-import { createRoute, Outlet, redirect } from "@tanstack/react-router";
+import { STORAGE_SESSION_HEADER } from "@dossier/shared";
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
+import { createRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import * as Effect from "effect/Effect";
 
-import { sessionAtom } from "../session.js";
+import { StorageRpc } from "../lib/rpc.js";
+import { sessionAtom, SessionState } from "../session.js";
 import { Route as rootRoute } from "./__root.js";
 
 export const Route = createRoute({
@@ -15,6 +19,20 @@ export const Route = createRoute({
   component: AppShell,
 });
 
+// --- Atom ---
+
+const logoutAtom = StorageRpc.runtime.fn<void>()(
+  (_arg, get) =>
+    Effect.gen(function* () {
+      const session = get(sessionAtom);
+      if (session._tag !== "Unlocked") return;
+      const client = yield* StorageRpc;
+      yield* client("Logout", undefined, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
+    }),
+);
+
+// --- Shell ---
+
 function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -27,6 +45,17 @@ function AppShell() {
 }
 
 function Sidebar() {
+  const session = useAtomValue(sessionAtom);
+  const navigate = useNavigate();
+  const logout = useAtomSet(logoutAtom, { mode: "promiseExit" });
+  const setSession = useAtomSet(sessionAtom);
+
+  async function handleLogout() {
+    await logout();
+    setSession(SessionState.LoggedOut());
+    void navigate({ to: "/login" });
+  }
+
   return (
     <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
       <div className="flex h-14 items-center border-b border-gray-200 px-4">
@@ -40,6 +69,20 @@ function Sidebar() {
           <p className="px-2 py-1 text-xs text-gray-400">No tags yet.</p>
         </SidebarSection>
       </nav>
+      <div className="border-t border-gray-200 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate text-sm font-medium text-gray-700">
+            {session._tag === "Unlocked" ? session.username : ""}
+          </span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="shrink-0 text-xs text-gray-400 hover:text-gray-700"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }
