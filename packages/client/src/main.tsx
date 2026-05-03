@@ -1,14 +1,22 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
+import { RegistryContext, RegistryProvider } from "@effect-atom/atom-react"
+import { RouterProvider } from "@tanstack/react-router"
+import { StrictMode, useContext } from "react"
+import { createRoot } from "react-dom/client"
+import "./index.css"
+import { router } from "./router.js"
 
-const rootEl = document.getElementById("root");
-if (!rootEl) throw new Error("Root element not found");
+function App() {
+  const registry = useContext(RegistryContext)
+  return <RouterProvider router={router} context={{ registry }} />
+}
+
+const rootEl = document.getElementById("root")
+if (!rootEl) throw new Error("Root element not found")
 
 createRoot(rootEl).render(
   <StrictMode>
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <h1 className="text-2xl font-semibold text-gray-900">Dossier</h1>
-    </div>
+    <RegistryProvider>
+      <App />
+    </RegistryProvider>
   </StrictMode>,
-);
+)
