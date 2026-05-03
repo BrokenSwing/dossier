@@ -38,7 +38,7 @@ const lockedSession = SessionState.Locked({
   username: "alice",
   encryptedDek: "enc",
   dekIv: "iv",
-  kdfParams: { algorithm: "argon2id", salt: "0011223344556677", memory: 65536, iterations: 3, parallelism: 1 },
+  kdfParams: { salt: "0011223344556677", memory: 65536, iterations: 3, parallelism: 1 },
 });
 
 describe("LoginPage / LoginForm", () => {

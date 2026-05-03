@@ -1,11 +1,9 @@
-import { STORAGE_SESSION_HEADER } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import { createRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import * as Effect from "effect/Effect";
 
-import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, SessionState } from "../session.js";
 import { Route as rootRoute } from "./__root.js";
+import { logoutAtom } from "./_auth.logout.js";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -18,18 +16,6 @@ export const Route = createRoute({
   },
   component: AppShell,
 });
-
-// --- Atom ---
-
-const logoutAtom = StorageRpc.runtime.fn<void>()(
-  (_arg, get) =>
-    Effect.gen(function* () {
-      const session = get(sessionAtom);
-      if (session._tag !== "Unlocked") return;
-      const client = yield* StorageRpc;
-      yield* client("Logout", undefined, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
-    }),
-);
 
 // --- Shell ---
 

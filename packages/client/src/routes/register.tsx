@@ -2,38 +2,18 @@ import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Cause from "effect/Cause";
-import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 
-import { deriveAuthKey, deriveKek, deriveMasterKey, generateDek, generateKdfParams, wrapDek } from "../lib/crypto.js";
-import { StorageRpc } from "../lib/rpc.js";
 import { Route as rootRoute } from "./__root.js";
+import { confirmTotpAtom, registerAtom } from "./register.state.js";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
   component: RegisterPage,
 });
-
-// --- Atoms ---
-
-const registerAtom = StorageRpc.runtime.fn<{ username: string; password: string }>()(({ username, password }, _get) =>
-  Effect.gen(function* () {
-    const kdfParams = generateKdfParams();
-    const masterKey = yield* deriveMasterKey(password, kdfParams);
-    const kek = yield* deriveKek(masterKey);
-    const authKey = yield* deriveAuthKey(masterKey);
-    const dek = generateDek();
-    const { encryptedDek, dekIv } = yield* wrapDek(dek, kek);
-    const client = yield* StorageRpc;
-    const { totpUri } = yield* client("Register", { username, authKey, kdfParams, encryptedDek, dekIv });
-    return { totpUri, username };
-  }),
-);
-
-const confirmTotpAtom = StorageRpc.mutation("ConfirmTotp");
 
 // --- Component ---
 

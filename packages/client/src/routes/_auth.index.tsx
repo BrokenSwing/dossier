@@ -1,62 +1,41 @@
 import { STORAGE_SESSION_HEADER } from "@dossier/shared";
-import type { DocumentMeta } from "@dossier/shared";
+import type { Collection, Tag } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
-import * as Atom from "@effect-atom/atom/Atom";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
+import type { DocumentMeta } from "@dossier/shared";
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, type UnlockedSession } from "../session.js";
 import { Route as authRoute } from "./_auth.js";
+import {
+  appendCursor,
+  docListAtom,
+  setNameFilter,
+  toggleSort,
+  type DocListState,
+  type SortDirection,
+  type SortField,
+} from "./_auth.index.docList.js";
+import {
+  addTag,
+  initialUploadFormState,
+  removeTag,
+  setFile,
+  setTagInput,
+  setUploadName,
+  toggleCollection,
+  uploadAtom,
+  uploadFormAtom,
+  uploadOpenAtom,
+  type UploadFormState,
+} from "./_auth.index.upload.js";
 
 export const Route = createRoute({
   getParentRoute: () => authRoute,
   path: "/",
   component: DocumentsPage,
-});
-
-// --- State atom ---
-
-type SortField = "name" | "createdAt";
-type SortDirection = "asc" | "desc";
-
-interface DocListState {
-  readonly sortField: SortField;
-  readonly sortDirection: SortDirection;
-  readonly nameFilter: string;
-  readonly cursors: ReadonlyArray<string | undefined>;
-}
-
-const initialDocListState: DocListState = {
-  sortField: "createdAt",
-  sortDirection: "desc",
-  nameFilter: "",
-  cursors: [undefined],
-};
-
-export const docListAtom = Atom.writable<DocListState, DocListState>(
-  () => initialDocListState,
-  (ctx, state) => ctx.setSelf(state),
-).pipe(Atom.keepAlive);
-
-// --- State transitions ---
-
-const toggleSort = (state: DocListState, field: SortField): DocListState => ({
-  ...state,
-  sortField: field,
-  sortDirection: state.sortField === field ? (state.sortDirection === "asc" ? "desc" : "asc") : "desc",
-  cursors: [undefined],
-});
-
-const setNameFilter = (state: DocListState, nameFilter: string): DocListState => ({
-  ...state,
-  nameFilter,
-  cursors: [undefined],
-});
-
-const appendCursor = (state: DocListState, cursor: string): DocListState => ({
-  ...state,
-  cursors: [...state.cursors, cursor],
 });
 
 // --- Page component ---
@@ -65,6 +44,7 @@ function DocumentsPage() {
   const session = useAtomValue(sessionAtom) as UnlockedSession;
   const state = useAtomValue(docListAtom);
   const setState = useAtomSet(docListAtom);
+  const setUploadOpen = useAtomSet(uploadOpenAtom);
 
   return (
     <div className="flex flex-col gap-4 p-6">
@@ -77,6 +57,9 @@ function DocumentsPage() {
           onChange={(e) => setState(setNameFilter(state, e.target.value))}
           className="input w-full max-w-sm"
         />
+        <button type="button" onClick={() => setUploadOpen(true)} className="ml-auto shrink-0 btn btn-primary">
+          Upload
+        </button>
       </div>
 
       <table className="w-full text-sm">
@@ -117,6 +100,183 @@ function DocumentsPage() {
           ))}
         </tbody>
       </table>
+
+      <UploadDialog session={session} />
+    </div>
+  );
+}
+
+// --- Upload dialog ---
+
+function UploadDialog({ session }: { session: UnlockedSession }) {
+  const open = useAtomValue(uploadOpenAtom);
+  const setOpen = useAtomSet(uploadOpenAtom);
+  const form = useAtomValue(uploadFormAtom);
+  const setForm = useAtomSet(uploadFormAtom);
+  const upload = useAtomSet(uploadAtom, { mode: "promiseExit" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const tagsQueryAtom = StorageRpc.query("ListTags", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+  });
+  const tagsResult = useAtomValue(tagsQueryAtom);
+
+  const collectionsQueryAtom = StorageRpc.query("ListCollections", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+  });
+  const collectionsResult = useAtomValue(collectionsQueryAtom);
+
+  if (!open) return null;
+
+  const availableTags: ReadonlyArray<Tag> = Result.isSuccess(tagsResult) ? tagsResult.value : [];
+  const filteredSuggestions = form.tagInput.trim()
+    ? availableTags
+        .filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()) && !form.selectedTags.includes(t.name))
+        .slice(0, 5)
+    : [];
+
+  const collections: ReadonlyArray<Collection> = Result.isSuccess(collectionsResult) ? collectionsResult.value : [];
+
+  const isValid = form.file !== null && form.name.trim().length > 0;
+
+  function close() {
+    setOpen(false);
+    setForm(initialUploadFormState);
+    setError(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isValid) return;
+    setLoading(true);
+    setError(null);
+    const exit = await upload();
+    setLoading(false);
+    if (exit._tag === "Success") {
+      close();
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Upload failed. Please try again.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="upload-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="upload-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Upload document</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="upload-file" className="mb-1 block text-sm font-medium text-gray-700">File</label>
+            <input
+              id="upload-file"
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) setForm(setFile(form, f));
+              }}
+              className="block w-full text-sm text-gray-500 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-gray-200"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="upload-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <input
+              id="upload-name"
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm(setUploadName(form, e.target.value))}
+              className="input w-full"
+              placeholder="Document name"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="upload-tag-input" className="mb-1 block text-sm font-medium text-gray-700">Tags</label>
+            {form.selectedTags.length > 0 && (
+              <div className="mb-1 flex flex-wrap gap-1">
+                {form.selectedTags.map((tag) => (
+                  <span key={tag} className="flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setForm(removeTag(form, tag))}
+                      className="text-blue-500 hover:text-blue-700"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="relative">
+              <input
+                type="text"
+                value={form.tagInput}
+                onChange={(e) => setForm(setTagInput(form, e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && form.tagInput.trim()) {
+                    e.preventDefault();
+                    setForm(addTag(form, form.tagInput.trim()));
+                  }
+                }}
+                id="upload-tag-input"
+              className="input w-full"
+              placeholder="Add tag and press Enter…"
+              />
+              {filteredSuggestions.length > 0 && (
+                <ul className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow-sm">
+                  {filteredSuggestions.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setForm(addTag(form, t.name));
+                        }}
+                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50"
+                      >
+                        {t.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {collections.length > 0 && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Collections</label>
+              <div className="max-h-32 overflow-y-auto rounded border border-gray-200 p-2">
+                {collections.map((c) => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedCollectionIds.includes(c.id)}
+                      onChange={() => setForm(toggleCollection(form, c.id))}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={close} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={!isValid || loading} className="btn btn-primary">
+              {loading ? "Uploading…" : "Upload"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -215,7 +375,17 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
 
 // --- UI helpers ---
 
-function SortButton({ label, active, direction, onClick }: { label: string; active: boolean; direction: SortDirection; onClick: () => void }) {
+function SortButton({
+  label,
+  active,
+  direction,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  direction: SortDirection;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

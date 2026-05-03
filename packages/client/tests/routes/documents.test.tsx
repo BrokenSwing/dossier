@@ -1,6 +1,6 @@
 import { RegistryContext, RegistryProvider } from "@effect-atom/atom-react";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
@@ -100,5 +100,71 @@ describe("DocumentsPage", () => {
     const input = await screen.findByPlaceholderText("Search by name…");
     await user.type(input, "invoice");
     expect(input).toHaveValue("invoice");
+  });
+});
+
+describe("DocumentsPage / UploadDialog", () => {
+  it("renders an Upload button", async () => {
+    renderDocumentsPage();
+    expect(await screen.findByRole("button", { name: "Upload" })).toBeInTheDocument();
+  });
+
+  it("dialog is not visible initially", async () => {
+    renderDocumentsPage();
+    await screen.findByRole("button", { name: "Upload" });
+    expect(screen.queryByRole("heading", { name: "Upload document" })).not.toBeInTheDocument();
+  });
+
+  it("clicking Upload opens the dialog", async () => {
+    renderDocumentsPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Upload" }));
+    expect(screen.getByRole("heading", { name: "Upload document" })).toBeInTheDocument();
+  });
+
+  it("dialog has file, name, and tag fields", async () => {
+    renderDocumentsPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Upload" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByLabelText("File")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Name")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Tags")).toBeInTheDocument();
+  });
+
+  it("Upload submit button is disabled when no file is selected", async () => {
+    renderDocumentsPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Upload" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Upload" })).toBeDisabled();
+  });
+
+  it("clicking Cancel closes the dialog", async () => {
+    renderDocumentsPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Upload" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("heading", { name: "Upload document" })).not.toBeInTheDocument();
+  });
+
+  it("typing a tag and pressing Enter adds a chip", async () => {
+    renderDocumentsPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Upload" }));
+    const tagInput = screen.getByPlaceholderText("Add tag and press Enter…");
+    await user.type(tagInput, "finance{Enter}");
+    expect(screen.getByText("finance")).toBeInTheDocument();
+    expect(tagInput).toHaveValue("");
+  });
+
+  it("removing a tag chip removes it from the list", async () => {
+    renderDocumentsPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Upload" }));
+    const tagInput = screen.getByPlaceholderText("Add tag and press Enter…");
+    await user.type(tagInput, "legal{Enter}");
+    await user.click(screen.getByRole("button", { name: "Remove tag legal" }));
+    expect(screen.queryByText("legal")).not.toBeInTheDocument();
   });
 });
