@@ -5,7 +5,6 @@ import { StorageRpcs, STORAGE_SESSION_HEADER, UserId } from "@dossier/shared";
 import { NodeContext, NodeHttpServer, NodeRuntime } from "@effect/platform-node";
 import { FileSystem } from "@effect/platform/FileSystem";
 import * as HttpLayerRouter from "@effect/platform/HttpLayerRouter";
-import { HttpServerRequest } from "@effect/platform/HttpServerRequest";
 import * as HttpServerResponse from "@effect/platform/HttpServerResponse";
 import * as RpcSerialization from "@effect/rpc/RpcSerialization";
 import * as RpcServer from "@effect/rpc/RpcServer";

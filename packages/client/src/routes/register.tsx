@@ -1,56 +1,46 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
-import { createRoute, Link, useNavigate } from "@tanstack/react-router"
-import * as Cause from "effect/Cause"
-import * as Effect from "effect/Effect"
-import * as Option from "effect/Option"
-import QRCode from "qrcode"
-import { useEffect, useState } from "react"
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
+import * as Result from "@effect-atom/atom/Result";
+import { createRoute, Link, useNavigate } from "@tanstack/react-router";
+import * as Cause from "effect/Cause";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 
-import { StorageRpc } from "../lib/rpc.js"
-import {
-  deriveAuthKey,
-  deriveKek,
-  deriveMasterKey,
-  generateDek,
-  generateKdfParams,
-  wrapDek,
-} from "../lib/crypto.js"
-import { Route as rootRoute } from "./__root.js"
+import { deriveAuthKey, deriveKek, deriveMasterKey, generateDek, generateKdfParams, wrapDek } from "../lib/crypto.js";
+import { StorageRpc } from "../lib/rpc.js";
+import { Route as rootRoute } from "./__root.js";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
   component: RegisterPage,
-})
+});
 
 // --- Atoms ---
 
-const registerAtom = StorageRpc.runtime.fn<{ username: string; password: string }>()(
-  ({ username, password }, _get) =>
-    Effect.gen(function* () {
-      const kdfParams = generateKdfParams()
-      const masterKey = yield* deriveMasterKey(password, kdfParams)
-      const kek = yield* deriveKek(masterKey)
-      const authKey = yield* deriveAuthKey(masterKey)
-      const dek = generateDek()
-      const { encryptedDek, dekIv } = yield* wrapDek(dek, kek)
-      const client = yield* StorageRpc
-      const { totpUri } = yield* client("Register", { username, authKey, kdfParams, encryptedDek, dekIv })
-      return { totpUri, username }
-    }),
-)
+const registerAtom = StorageRpc.runtime.fn<{ username: string; password: string }>()(({ username, password }, _get) =>
+  Effect.gen(function* () {
+    const kdfParams = generateKdfParams();
+    const masterKey = yield* deriveMasterKey(password, kdfParams);
+    const kek = yield* deriveKek(masterKey);
+    const authKey = yield* deriveAuthKey(masterKey);
+    const dek = generateDek();
+    const { encryptedDek, dekIv } = yield* wrapDek(dek, kek);
+    const client = yield* StorageRpc;
+    const { totpUri } = yield* client("Register", { username, authKey, kdfParams, encryptedDek, dekIv });
+    return { totpUri, username };
+  }),
+);
 
-const confirmTotpAtom = StorageRpc.mutation("ConfirmTotp")
+const confirmTotpAtom = StorageRpc.mutation("ConfirmTotp");
 
 // --- Component ---
 
-type Step =
-  | { readonly _tag: "Credentials" }
-  | { readonly _tag: "Totp"; readonly username: string; readonly totpUri: string }
+type Step = { readonly _tag: "Credentials" } | { readonly _tag: "Totp"; readonly username: string; readonly totpUri: string };
 
 function RegisterPage() {
-  const [step, setStep] = useState<Step>({ _tag: "Credentials" })
+  const [step, setStep] = useState<Step>({ _tag: "Credentials" });
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -62,29 +52,32 @@ function RegisterPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 // --- Step 1: username + password ---
 
 function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri: string) => void }) {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirm, setConfirm] = useState("")
-  const submit = useAtomSet(registerAtom, { mode: "promiseExit" })
-  const result = useAtomValue(registerAtom)
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const submit = useAtomSet(registerAtom, { mode: "promiseExit" });
+  const result = useAtomValue(registerAtom);
 
-  const isWaiting = Result.isWaiting(result)
+  const isWaiting = Result.isWaiting(result);
   const error = Result.isFailure(result)
-    ? Option.getOrElse(Option.map(Cause.failureOption(result.cause), (e) => e.message), () => "Registration failed.")
-    : null
+    ? Option.getOrElse(
+        Option.map(Cause.failureOption(result.cause), (e) => e.message),
+        () => "Registration failed.",
+      )
+    : null;
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (password !== confirm) return
-    const exit = await submit({ username, password })
+    e.preventDefault();
+    if (password !== confirm) return;
+    const exit = await submit({ username, password });
     if (exit._tag === "Success") {
-      onSuccess(exit.value.username, exit.value.totpUri)
+      onSuccess(exit.value.username, exit.value.totpUri);
     }
   }
 
@@ -93,14 +86,7 @@ function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri:
       <h1 className="mb-6 text-xl font-semibold text-gray-900">Create account</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Username">
-          <input
-            type="text"
-            autoComplete="username"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="input"
-          />
+          <input type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="input" />
         </Field>
         <Field label="Password">
           <input
@@ -121,16 +107,10 @@ function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri:
             onChange={(e) => setConfirm(e.target.value)}
             className="input"
           />
-          {password && confirm && password !== confirm && (
-            <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>
-          )}
+          {password && confirm && password !== confirm && <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>}
         </Field>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={isWaiting || password !== confirm}
-          className="btn-primary"
-        >
+        <button type="submit" disabled={isWaiting || password !== confirm} className="btn-primary">
           {isWaiting ? "Creating account…" : "Continue"}
         </button>
       </form>
@@ -141,41 +121,42 @@ function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri:
         </Link>
       </p>
     </>
-  )
+  );
 }
 
 // --- Step 2: TOTP setup ---
 
 function TotpStep({ username, totpUri }: { username: string; totpUri: string }) {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
-  const [code, setCode] = useState("")
-  const navigate = useNavigate()
-  const submit = useAtomSet(confirmTotpAtom, { mode: "promiseExit" })
-  const result = useAtomValue(confirmTotpAtom)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const navigate = useNavigate();
+  const submit = useAtomSet(confirmTotpAtom, { mode: "promiseExit" });
+  const result = useAtomValue(confirmTotpAtom);
 
-  const isWaiting = Result.isWaiting(result)
+  const isWaiting = Result.isWaiting(result);
   const error = Result.isFailure(result)
-    ? Option.getOrElse(Option.map(Cause.failureOption(result.cause), (e) => e.message), () => "Invalid code.")
-    : null
+    ? Option.getOrElse(
+        Option.map(Cause.failureOption(result.cause), (e) => e.message),
+        () => "Invalid code.",
+      )
+    : null;
 
   useEffect(() => {
-    QRCode.toDataURL(totpUri, { width: 200 }).then(setQrDataUrl)
-  }, [totpUri])
+    QRCode.toDataURL(totpUri, { width: 200 }).then(setQrDataUrl);
+  }, [totpUri]);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const exit = await submit({ payload: { username, totpCode: code } })
+    e.preventDefault();
+    const exit = await submit({ payload: { username, totpCode: code } });
     if (exit._tag === "Success") {
-      void navigate({ to: "/login" })
+      void navigate({ to: "/login" });
     }
   }
 
   return (
     <>
       <h1 className="mb-2 text-xl font-semibold text-gray-900">Set up authenticator</h1>
-      <p className="mb-4 text-sm text-gray-500">
-        Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.
-      </p>
+      <p className="mb-4 text-sm text-gray-500">Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.</p>
       <div className="mb-4 flex justify-center">
         {qrDataUrl ? (
           <img src={qrDataUrl} alt="TOTP QR code" width={200} height={200} />
@@ -203,7 +184,7 @@ function TotpStep({ username, totpUri }: { username: string; totpUri: string }) 
         </button>
       </form>
     </>
-  )
+  );
 }
 
 // --- Shared UI primitives ---
@@ -214,5 +195,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-sm font-medium text-gray-700">{label}</span>
       {children}
     </label>
-  )
+  );
 }

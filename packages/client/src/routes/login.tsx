@@ -1,11 +1,12 @@
-import { createRoute, Link } from "@tanstack/react-router"
-import { Route as rootRoute } from "./__root.js"
+import { createRoute, Link } from "@tanstack/react-router";
+
+import { Route as rootRoute } from "./__root.js";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: LoginPage,
-})
+});
 
 function LoginPage() {
   return (
@@ -21,5 +22,5 @@ function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }

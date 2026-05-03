@@ -14,7 +14,5 @@ export const extractSessionToken = (headers: Headers.Headers): Effect.Effect<str
 
 export const ComputeAuthLive = Layer.succeed(
   ComputeAuth,
-  ComputeAuth.of(({ headers }) =>
-    extractSessionToken(headers).pipe(Effect.map((sessionToken) => ({ sessionToken }))),
-  ),
+  ComputeAuth.of(({ headers }) => extractSessionToken(headers).pipe(Effect.map((sessionToken) => ({ sessionToken })))),
 );

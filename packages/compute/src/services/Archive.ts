@@ -1,9 +1,8 @@
 import * as nodeStream from "node:stream";
 
-import archiver from "archiver";
-
 import type { ExportFormat } from "@dossier/shared";
 import { ArchiveFailedError } from "@dossier/shared";
+import archiver from "archiver";
 import * as Effect from "effect/Effect";
 
 export const createArchive = (

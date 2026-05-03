@@ -14,16 +14,15 @@ import * as Chunk from "effect/Chunk";
 import * as Effect from "effect/Effect";
 import * as Stream from "effect/Stream";
 
-import { StorageClient, StorageUrl } from "../StorageClient.js";
 import { createArchive } from "../services/Archive.js";
 import { CryptoService } from "../services/Crypto.js";
 import { WatermarkService } from "../services/Watermark.js";
+import { StorageClient, StorageUrl } from "../StorageClient.js";
 
 const collectStream = <E>(s: Stream.Stream<Uint8Array, E>): Effect.Effect<Uint8Array, E> =>
   Stream.runCollect(s).pipe(Effect.map((chunks) => new Uint8Array(Buffer.concat(Chunk.toReadonlyArray(chunks).map((c) => Buffer.from(c))))));
 
-const mapStorageError = (e: unknown): NotFoundError | InternalError =>
-  e instanceof NotFoundError ? e : new InternalError({ message: String(e) });
+const mapStorageError = (e: unknown): NotFoundError | InternalError => (e instanceof NotFoundError ? e : new InternalError({ message: String(e) }));
 
 // Paginates through all documents for the current user.
 const listAllDocuments = (sessionToken: string) =>
@@ -53,7 +52,12 @@ const listAllDocuments = (sessionToken: string) =>
     return docs;
   });
 
-const uploadEncryptedBlob = (blobKey: string, data: Uint8Array, sessionToken: string, storageUrl: string): Effect.Effect<void, InternalError, HttpClient.HttpClient> =>
+const uploadEncryptedBlob = (
+  blobKey: string,
+  data: Uint8Array,
+  sessionToken: string,
+  storageUrl: string,
+): Effect.Effect<void, InternalError, HttpClient.HttpClient> =>
   Effect.gen(function* () {
     const httpClient = yield* HttpClient.HttpClient;
     const response = yield* httpClient
@@ -95,7 +99,11 @@ export const computeHandlers = ComputeRpcs.toLayer({
         const dekBytes = Buffer.from(dek, "base64url");
         const [meta, encrypted] = yield* Effect.all([
           client.GetDocumentMeta({ documentId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } }).pipe(Effect.mapError(mapStorageError)),
-          collectStream(client.DownloadDocumentBlob({ documentId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } }).pipe(Stream.mapError(mapStorageError))),
+          collectStream(
+            client
+              .DownloadDocumentBlob({ documentId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
+              .pipe(Stream.mapError(mapStorageError)),
+          ),
         ] as const);
         const plaintext = yield* crypto.decrypt(encrypted, dekBytes);
         const watermarked = yield* watermarkSvc.apply(plaintext, meta.format, { text: watermarkText });
@@ -116,9 +124,13 @@ export const computeHandlers = ComputeRpcs.toLayer({
           (docId) =>
             Effect.gen(function* () {
               const [meta, encrypted] = yield* Effect.all([
-                client.GetDocumentMeta({ documentId: docId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } }).pipe(Effect.mapError(mapStorageError)),
+                client
+                  .GetDocumentMeta({ documentId: docId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
+                  .pipe(Effect.mapError(mapStorageError)),
                 collectStream(
-                  client.DownloadDocumentBlob({ documentId: docId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } }).pipe(Stream.mapError(mapStorageError)),
+                  client
+                    .DownloadDocumentBlob({ documentId: docId }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
+                    .pipe(Stream.mapError(mapStorageError)),
                 ),
               ] as const);
               let content = yield* crypto.decrypt(encrypted, dekBytes);
@@ -157,7 +169,9 @@ export const computeHandlers = ComputeRpcs.toLayer({
             ]) =>
               Effect.gen(function* () {
                 const encrypted = yield* collectStream(
-                  client.DownloadDocumentBlob({ documentId: doc.id }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } }).pipe(Stream.mapError(mapStorageError)),
+                  client
+                    .DownloadDocumentBlob({ documentId: doc.id }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
+                    .pipe(Stream.mapError(mapStorageError)),
                 );
                 const plaintext = yield* crypto.decrypt(encrypted, oldDekBytes);
                 const reEncrypted = yield* crypto
@@ -173,7 +187,10 @@ export const computeHandlers = ComputeRpcs.toLayer({
 
                 yield* uploadEncryptedBlob(newBlobKey, reEncrypted, sessionToken, storageUrl);
                 yield* client
-                  .ConfirmBlobUpload({ documentId: newDocId, encryptedSize: reEncrypted.length }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
+                  .ConfirmBlobUpload(
+                    { documentId: newDocId, encryptedSize: reEncrypted.length },
+                    { headers: { [STORAGE_SESSION_HEADER]: sessionToken } },
+                  )
                   .pipe(Effect.mapError(mapStorageError));
                 yield* client
                   .DeleteDocument({ documentId: doc.id }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
@@ -185,9 +202,10 @@ export const computeHandlers = ComputeRpcs.toLayer({
         );
 
         const finalizationStream = Stream.fromEffect(
-          client
-            .UpdateEncryptedDek({ newEncryptedDek, newDekIv }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
-            .pipe(Effect.mapError(mapStorageError), Effect.map(() => new KeyRotationProgress({ processed: total, total, currentDocumentId: null, phase: "finalizing" }))),
+          client.UpdateEncryptedDek({ newEncryptedDek, newDekIv }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } }).pipe(
+            Effect.mapError(mapStorageError),
+            Effect.map(() => new KeyRotationProgress({ processed: total, total, currentDocumentId: null, phase: "finalizing" })),
+          ),
         );
 
         return Stream.concat(progressStream, finalizationStream);

@@ -1,14 +1,4 @@
-import {
-  Collection,
-  CollectionId,
-  DocumentId,
-  UserId,
-  WatermarkConfig,
-  InternalError,
-  NotFoundError,
-  ConflictError,
-  CircularCollectionError,
-} from "@dossier/shared";
+import { Collection, CollectionId, DocumentId, UserId, WatermarkConfig, InternalError, NotFoundError, ConflictError } from "@dossier/shared";
 import { SqlClient } from "@effect/sql/SqlClient";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

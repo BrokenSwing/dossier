@@ -1,6 +1,6 @@
 import * as crypto from "node:crypto";
 
-import { StorageDocumentRpcs, StorageAuth, AuthContext, InternalError, NotFoundError, DocumentId, CollectionId, Tag, TagId } from "@dossier/shared";
+import { StorageDocumentRpcs, StorageAuth, AuthContext, InternalError, NotFoundError, DocumentId, Tag, TagId } from "@dossier/shared";
 import { SqlClient } from "@effect/sql/SqlClient";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

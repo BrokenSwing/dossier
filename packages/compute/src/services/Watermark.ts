@@ -1,11 +1,10 @@
-import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import sharp from "sharp";
-
 import type { DocumentFormat, WatermarkConfig } from "@dossier/shared";
 import { WatermarkFailedError } from "@dossier/shared";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+import sharp from "sharp";
 
 interface WatermarkServiceInterface {
   readonly apply: (content: Uint8Array, format: DocumentFormat, config: WatermarkConfig) => Effect.Effect<Uint8Array, WatermarkFailedError>;
@@ -37,7 +36,7 @@ const applyImageWatermark = async (content: Uint8Array, text: string): Promise<U
   const width = metadata.width ?? 800;
   const height = metadata.height ?? 600;
   const fontSize = Math.round(Math.min(width, height) / 10);
-  const safe = text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
+  const safe = text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c] ?? c);
   const svg = Buffer.from(
     `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">` +
       `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle"` +
@@ -45,7 +44,11 @@ const applyImageWatermark = async (content: Uint8Array, text: string): Promise<U
       ` transform="rotate(-45 ${width / 2} ${height / 2})">${safe}</text>` +
       `</svg>`,
   );
-  return new Uint8Array(await sharp(content).composite([{ input: svg, blend: "over" }]).toBuffer());
+  return new Uint8Array(
+    await sharp(content)
+      .composite([{ input: svg, blend: "over" }])
+      .toBuffer(),
+  );
 };
 
 export const WatermarkServiceLive = Layer.succeed(WatermarkService, {

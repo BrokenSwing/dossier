@@ -17,10 +17,7 @@ import {
 
 // --- Auth context (injected by middleware) ---
 
-export class ComputeAuthContext extends Context.Tag("@dossier/compute/AuthContext")<
-  ComputeAuthContext,
-  { readonly sessionToken: string }
->() {}
+export class ComputeAuthContext extends Context.Tag("@dossier/compute/AuthContext")<ComputeAuthContext, { readonly sessionToken: string }>() {}
 
 // --- Middleware ---
 

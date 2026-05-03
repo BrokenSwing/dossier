@@ -6,9 +6,9 @@ import * as HttpServerResponse from "@effect/platform/HttpServerResponse";
 import * as Effect from "effect/Effect";
 
 import { AppConfig } from "../Config.js";
-import { StorageClient } from "../StorageClient.js";
 import { extractSessionToken } from "../middleware/ComputeAuth.js";
 import { CryptoService } from "../services/Crypto.js";
+import { StorageClient } from "../StorageClient.js";
 
 const COMPUTE_DEK_HEADER = "x-dossier-dek" as const;
 const DOCUMENT_NAME_HEADER = "x-document-name" as const;
@@ -51,7 +51,10 @@ export const UploadRoute = HttpLayerRouter.add("POST", "/upload", (req) =>
 
     // --- Create metadata ---
     const { documentId, blobKey } = yield* client
-      .CreateDocumentMeta({ name, format: format as "pdf" | "jpg" | "png", tagNames, collectionIds }, { headers: { [STORAGE_SESSION_HEADER]: sessionToken } })
+      .CreateDocumentMeta(
+        { name, format: format as "pdf" | "jpg" | "png", tagNames, collectionIds },
+        { headers: { [STORAGE_SESSION_HEADER]: sessionToken } },
+      )
       .pipe(Effect.mapError((e) => new InternalError({ message: String(e) })));
 
     // --- Upload encrypted blob ---

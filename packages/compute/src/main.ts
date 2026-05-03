@@ -10,12 +10,12 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
 import { AppConfig } from "./Config.js";
-import { StorageClientLive } from "./StorageClient.js";
 import { computeHandlers } from "./handlers/ComputeHandlers.js";
 import { ComputeAuthLive } from "./middleware/ComputeAuth.js";
 import { UploadRoute } from "./routes/UploadRoute.js";
 import { CryptoServiceLive } from "./services/Crypto.js";
 import { WatermarkServiceLive } from "./services/Watermark.js";
+import { StorageClientLive } from "./StorageClient.js";
 
 const MainLayer = Layer.unwrapEffect(
   Effect.gen(function* () {

@@ -38,9 +38,7 @@ describe("Preview", () => {
   it.scoped("decrypts and streams the plaintext back", () =>
     Effect.gen(function* () {
       const encrypted = yield* encryptWithDek(plaintext, DEK);
-      const { TestLayer } = makeTestLayer([
-        { documentId: DOC_ID, name: "test.pdf", format: "pdf", tags: [], collectionIds: [], blob: encrypted },
-      ]);
+      const { TestLayer } = makeTestLayer([{ documentId: DOC_ID, name: "test.pdf", format: "pdf", tags: [], collectionIds: [], blob: encrypted }]);
       const client = yield* RpcTest.makeClient(ComputeRpcs).pipe(Effect.provide(TestLayer));
       const chunks = yield* collectStream(client.Preview({ dek: DEK_BASE64, documentId: DOC_ID }));
       const result = Buffer.concat(chunks.map((c) => Buffer.from(c)));
@@ -65,9 +63,7 @@ describe("WatermarkPreview", () => {
   it.scoped("returns content with watermark applied (fake watermark returns content unchanged)", () =>
     Effect.gen(function* () {
       const encrypted = yield* encryptWithDek(plaintext, DEK);
-      const { TestLayer } = makeTestLayer([
-        { documentId: DOC_ID, name: "test.pdf", format: "pdf", tags: [], collectionIds: [], blob: encrypted },
-      ]);
+      const { TestLayer } = makeTestLayer([{ documentId: DOC_ID, name: "test.pdf", format: "pdf", tags: [], collectionIds: [], blob: encrypted }]);
       const client = yield* RpcTest.makeClient(ComputeRpcs).pipe(Effect.provide(TestLayer));
       const chunks = yield* collectStream(client.WatermarkPreview({ dek: DEK_BASE64, documentId: DOC_ID, watermarkText: "CONFIDENTIAL" }));
       const result = Buffer.concat(chunks.map((c) => Buffer.from(c)));
@@ -90,9 +86,7 @@ describe("Export", () => {
         { documentId: DOC_ID_2, name: "doc2", format: "pdf", tags: [], collectionIds: [], blob: enc2 },
       ]);
       const client = yield* RpcTest.makeClient(ComputeRpcs).pipe(Effect.provide(TestLayer));
-      const chunks = yield* collectStream(
-        client.Export({ dek: DEK_BASE64, docIds: [DOC_ID_1, DOC_ID_2], exportFormat: "zip" }),
-      );
+      const chunks = yield* collectStream(client.Export({ dek: DEK_BASE64, docIds: [DOC_ID_1, DOC_ID_2], exportFormat: "zip" }));
       const result = Buffer.concat(chunks.map((c) => Buffer.from(c)));
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe(0x50); // ZIP magic: PK
@@ -103,13 +97,9 @@ describe("Export", () => {
   it.scoped("produces a valid tar.gz archive when requested", () =>
     Effect.gen(function* () {
       const encrypted = yield* encryptWithDek(content1, DEK);
-      const { TestLayer } = makeTestLayer([
-        { documentId: DOC_ID_1, name: "doc1", format: "pdf", tags: [], collectionIds: [], blob: encrypted },
-      ]);
+      const { TestLayer } = makeTestLayer([{ documentId: DOC_ID_1, name: "doc1", format: "pdf", tags: [], collectionIds: [], blob: encrypted }]);
       const client = yield* RpcTest.makeClient(ComputeRpcs).pipe(Effect.provide(TestLayer));
-      const chunks = yield* collectStream(
-        client.Export({ dek: DEK_BASE64, docIds: [DOC_ID_1], exportFormat: "tar.gz" }),
-      );
+      const chunks = yield* collectStream(client.Export({ dek: DEK_BASE64, docIds: [DOC_ID_1], exportFormat: "tar.gz" }));
       const result = Buffer.concat(chunks.map((c) => Buffer.from(c)));
       expect(result[0]).toBe(0x1f); // gzip magic
       expect(result[1]).toBe(0x8b);

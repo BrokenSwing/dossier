@@ -1,6 +1,6 @@
 import { StorageAuth, StorageCollectionRpcs, CollectionId, DocumentId } from "@dossier/shared";
 import * as RpcTest from "@effect/rpc/RpcTest";
-import { describe, expect, it, layer } from "@effect/vitest";
+import { describe, expect, layer } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 

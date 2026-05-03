@@ -1,8 +1,7 @@
-import { argon2id } from "hash-wasm";
-
 import { KdfParams } from "@dossier/shared";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import { argon2id } from "hash-wasm";
 
 // --- Error type ---
 
@@ -41,8 +40,7 @@ export function base64UrlToBytes(b64: string): Uint8Array {
 }
 
 // Typed cast for Web Crypto API: Uint8Array<ArrayBufferLike> → BufferSource
-const asBufferSource = (u: Uint8Array): ArrayBuffer =>
-  u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
+const asBufferSource = (u: Uint8Array): ArrayBuffer => u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
 
 // --- Key derivation ---
 

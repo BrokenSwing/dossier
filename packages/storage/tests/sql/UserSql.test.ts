@@ -1,5 +1,5 @@
 import { UserId } from "@dossier/shared";
-import { describe, expect, it, layer } from "@effect/vitest";
+import { describe, expect, layer } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";

@@ -3,7 +3,7 @@ import * as path from "node:path";
 
 import { NodeContext } from "@effect/platform-node";
 import { FileSystem } from "@effect/platform/FileSystem";
-import { describe, expect, it, layer } from "@effect/vitest";
+import { describe, expect, layer } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";

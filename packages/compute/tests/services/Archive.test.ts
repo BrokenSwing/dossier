@@ -7,10 +7,7 @@ describe("createArchive", () => {
   describe("zip", () => {
     it.effect("produces a valid zip (PK magic bytes)", () =>
       Effect.gen(function* () {
-        const result = yield* createArchive(
-          [{ name: "hello.txt", content: new TextEncoder().encode("hello") }],
-          "zip",
-        );
+        const result = yield* createArchive([{ name: "hello.txt", content: new TextEncoder().encode("hello") }], "zip");
         expect(result[0]).toBe(0x50); // P
         expect(result[1]).toBe(0x4b); // K
       }),
@@ -39,10 +36,7 @@ describe("createArchive", () => {
   describe("tar.gz", () => {
     it.effect("produces a valid gzip (magic bytes 1f 8b)", () =>
       Effect.gen(function* () {
-        const result = yield* createArchive(
-          [{ name: "hello.txt", content: new TextEncoder().encode("hello") }],
-          "tar.gz",
-        );
+        const result = yield* createArchive([{ name: "hello.txt", content: new TextEncoder().encode("hello") }], "tar.gz");
         expect(result[0]).toBe(0x1f);
         expect(result[1]).toBe(0x8b);
       }),

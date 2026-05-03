@@ -10,7 +10,6 @@ import {
   UsernameTakenError,
   KdfParams,
 } from "@dossier/shared";
-import { SqlClient } from "@effect/sql/SqlClient";
 import * as argon2 from "argon2";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

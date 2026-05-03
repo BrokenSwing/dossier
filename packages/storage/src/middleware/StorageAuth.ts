@@ -1,4 +1,4 @@
-import { AuthContext, StorageAuth, STORAGE_SESSION_HEADER, InvalidSessionError, UserId } from "@dossier/shared";
+import { StorageAuth, STORAGE_SESSION_HEADER, InvalidSessionError, UserId } from "@dossier/shared";
 import * as Headers from "@effect/platform/Headers";
 import { SqlClient } from "@effect/sql/SqlClient";
 import * as Effect from "effect/Effect";

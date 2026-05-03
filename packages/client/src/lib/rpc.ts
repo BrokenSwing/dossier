@@ -1,27 +1,16 @@
-import { AtomRpc } from "@effect-atom/atom"
-import {
-  FetchHttpClient,
-  HttpApi,
-  HttpApiClient,
-  HttpApiEndpoint,
-  HttpApiGroup,
-  HttpApiSchema,
-  HttpClient,
-} from "@effect/platform"
-import { RpcClient, RpcSerialization } from "@effect/rpc"
-import { COMPUTE_SESSION_HEADER, ComputeRpcs, STORAGE_SESSION_HEADER, StorageRpcs } from "@dossier/shared"
-import type { CollectionId, DocumentId } from "@dossier/shared"
-import * as Effect from "effect/Effect"
-import { Layer } from "effect"
-import * as Schema from "effect/Schema"
+import { COMPUTE_SESSION_HEADER, ComputeRpcs, STORAGE_SESSION_HEADER, StorageRpcs } from "@dossier/shared";
+import type { CollectionId, DocumentId } from "@dossier/shared";
+import { AtomRpc } from "@effect-atom/atom";
+import { FetchHttpClient, HttpApi, HttpApiClient, HttpApiEndpoint, HttpApiGroup, HttpApiSchema, HttpClient } from "@effect/platform";
+import { RpcClient, RpcSerialization } from "@effect/rpc";
+import { Layer } from "effect";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 
 // --- Protocol layers ---
 
 const makeHttpProtocol = (url: string) =>
-  RpcClient.layerProtocolHttp({ url }).pipe(
-    Layer.provide(RpcSerialization.layerNdjson),
-    Layer.provide(FetchHttpClient.layer),
-  )
+  RpcClient.layerProtocolHttp({ url }).pipe(Layer.provide(RpcSerialization.layerNdjson), Layer.provide(FetchHttpClient.layer));
 
 // --- RPC client tags ---
 
@@ -37,11 +26,9 @@ export class ComputeRpc extends AtomRpc.Tag<ComputeRpc>()("@dossier/client/Compu
 
 // --- Session header helpers ---
 
-export const storageHeaders = (sessionToken: string) =>
-  ({ [STORAGE_SESSION_HEADER]: sessionToken }) as const
+export const storageHeaders = (sessionToken: string) => ({ [STORAGE_SESSION_HEADER]: sessionToken }) as const;
 
-export const computeHeaders = (sessionToken: string) =>
-  ({ [COMPUTE_SESSION_HEADER]: sessionToken }) as const
+export const computeHeaders = (sessionToken: string) => ({ [COMPUTE_SESSION_HEADER]: sessionToken }) as const;
 
 // --- Storage blob upload API (PUT /blobs/:blobKey) ---
 // Used in local compute mode: client encrypts client-side, then pushes
@@ -54,7 +41,7 @@ const StorageBlobApi = HttpApi.make("StorageBlobApi").add(
       .setHeaders(Schema.Struct({ [STORAGE_SESSION_HEADER]: Schema.String }))
       .addSuccess(HttpApiSchema.Empty(204)),
   ),
-)
+);
 
 export class UploadError extends Schema.TaggedError<UploadError>()("UploadError", {
   message: Schema.String,
@@ -68,13 +55,13 @@ export const uploadBlob = (
   Effect.gen(function* () {
     const client = yield* HttpApiClient.make(StorageBlobApi, {
       baseUrl: import.meta.env.VITE_STORAGE_URL ?? "",
-    })
+    });
     yield* client.blobs.uploadBlob({
       path: { blobKey },
       payload: encryptedData,
       headers: { [STORAGE_SESSION_HEADER]: sessionToken },
-    })
-  }).pipe(Effect.mapError((e) => new UploadError({ message: String(e) })))
+    });
+  }).pipe(Effect.mapError((e) => new UploadError({ message: String(e) })));
 
 // --- Compute upload API (POST /upload) ---
 // Used in server-hosted compute mode: compute receives the plaintext file,
@@ -98,23 +85,23 @@ const ComputeUploadApi = HttpApi.make("ComputeUploadApi").add(
         status: 201,
       }),
   ),
-)
+);
 
 export interface UploadDocumentOptions {
-  readonly file: Uint8Array
-  readonly name: string
-  readonly format: "pdf" | "jpg" | "png"
-  readonly dekBase64Url: string
-  readonly sessionToken: string
-  readonly tagNames?: ReadonlyArray<string>
-  readonly collectionIds?: ReadonlyArray<CollectionId>
+  readonly file: Uint8Array;
+  readonly name: string;
+  readonly format: "pdf" | "jpg" | "png";
+  readonly dekBase64Url: string;
+  readonly sessionToken: string;
+  readonly tagNames?: ReadonlyArray<string>;
+  readonly collectionIds?: ReadonlyArray<CollectionId>;
 }
 
 export const uploadDocument = (options: UploadDocumentOptions): Effect.Effect<DocumentId, UploadError, HttpClient.HttpClient> =>
   Effect.gen(function* () {
     const client = yield* HttpApiClient.make(ComputeUploadApi, {
       baseUrl: import.meta.env.VITE_COMPUTE_URL ?? "",
-    })
+    });
     const result = yield* client.upload.uploadDocument({
       payload: options.file,
       headers: {
@@ -122,13 +109,9 @@ export const uploadDocument = (options: UploadDocumentOptions): Effect.Effect<Do
         "x-dossier-dek": options.dekBase64Url,
         "x-document-name": options.name,
         "x-document-format": options.format,
-        ...(options.tagNames && options.tagNames.length > 0
-          ? { "x-document-tags": JSON.stringify(options.tagNames) }
-          : {}),
-        ...(options.collectionIds && options.collectionIds.length > 0
-          ? { "x-document-collections": JSON.stringify(options.collectionIds) }
-          : {}),
+        ...(options.tagNames && options.tagNames.length > 0 ? { "x-document-tags": JSON.stringify(options.tagNames) } : {}),
+        ...(options.collectionIds && options.collectionIds.length > 0 ? { "x-document-collections": JSON.stringify(options.collectionIds) } : {}),
       },
-    })
-    return result.documentId
-  }).pipe(Effect.mapError((e) => new UploadError({ message: String(e) })))
+    });
+    return result.documentId;
+  }).pipe(Effect.mapError((e) => new UploadError({ message: String(e) })));

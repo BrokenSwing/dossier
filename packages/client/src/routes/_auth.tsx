@@ -1,18 +1,19 @@
-import { createRoute, Outlet, redirect } from "@tanstack/react-router"
-import { Route as rootRoute } from "./__root.js"
-import { sessionAtom } from "../session.js"
+import { createRoute, Outlet, redirect } from "@tanstack/react-router";
+
+import { sessionAtom } from "../session.js";
+import { Route as rootRoute } from "./__root.js";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   id: "_auth",
   beforeLoad: ({ context }) => {
-    const session = context.registry.get(sessionAtom)
+    const session = context.registry.get(sessionAtom);
     if (session._tag !== "Unlocked") {
-      throw redirect({ to: "/login" })
+      throw redirect({ to: "/login" });
     }
   },
   component: AppShell,
-})
+});
 
 function AppShell() {
   return (
@@ -22,7 +23,7 @@ function AppShell() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }
 
 function Sidebar() {
@@ -40,7 +41,7 @@ function Sidebar() {
         </SidebarSection>
       </nav>
     </aside>
-  )
+  );
 }
 
 function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -49,5 +50,5 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
       <h2 className="px-2 py-1 text-xs font-medium tracking-wide text-gray-400 uppercase">{title}</h2>
       {children}
     </section>
-  )
+  );
 }
