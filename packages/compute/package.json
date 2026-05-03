@@ -6,20 +6,27 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "dev": "node --watch dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepare": "effect-language-service patch"
   },
   "dependencies": {
     "@dossier/shared": "workspace:*",
     "@effect/platform": "0.96.0",
+    "@effect/platform-node": "0.96.0",
     "@effect/rpc": "0.75.0",
     "archiver": "^7.0.0",
     "effect": "3.21.1",
+    "jsonwebtoken": "^9.0.0",
     "pdf-lib": "^1.17.0",
     "sharp": "^0.33.0"
   },
   "devDependencies": {
     "@effect/language-service": "^0.85.1",
+    "@effect/vitest": "0.29.0",
     "@types/archiver": "^6.0.0",
-    "typescript": "^5.7.0"
+    "@types/jsonwebtoken": "^9.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
   }
 }

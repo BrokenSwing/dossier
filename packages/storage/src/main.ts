@@ -80,21 +80,29 @@ const BlobUploadRoute = HttpLayerRouter.add("PUT", "/blobs/:blobKey", (req) =>
 
 // --- Entry point ---
 
+// Pre-read the migration file using Effect's FileSystem, then capture the content
+// in a closure so the SqliteMigrator.fromRecord effect only requires SqlClient.
+const readMigrationSql = Effect.gen(function* () {
+  const fs = yield* FileSystem;
+  return yield* fs.readFileString(fileURLToPath(new URL("../../migrations/001_initial.sql", import.meta.url)));
+});
+
 const MainLayer = Layer.unwrapEffect(
   Effect.gen(function* () {
     const { dbPath, blobDir, port } = yield* AppConfig;
     yield* Effect.log(`Storage service starting on port ${port}`);
 
+    const migrationSql = yield* readMigrationSql;
+
     // Infrastructure layers
+    const NodeContextLayer = NodeContext.layer;
     const SqlLayer = SqliteClient.layer({ filename: dbPath });
 
     const MigrationLayer = Layer.effectDiscard(
       SqliteMigrator.make({ dumpSchema: () => Effect.void })({
         loader: SqliteMigrator.fromRecord({
           "001_initial": Effect.gen(function* () {
-            const fileSystem = yield* FileSystem;
             const sql = yield* SqlClient;
-            const migrationSql = yield* fileSystem.readFileString(fileURLToPath(new URL("../../migrations/001_initial.sql", import.meta.url)));
             const statements = migrationSql
               .split(";")
               .map((s) => s.trim())
@@ -103,9 +111,7 @@ const MainLayer = Layer.unwrapEffect(
           }),
         }),
       }),
-    ).pipe(Layer.provide(Layer.merge(SqlLayer, NodeContextLayer)));
-
-    const NodeContextLayer = NodeContext.layer;
+    ).pipe(Layer.provide(SqlLayer));
 
     const BlobStoreLayer = blobStoreLayer(blobDir).pipe(Layer.provide(NodeContextLayer));
 
@@ -125,9 +131,6 @@ const MainLayer = Layer.unwrapEffect(
       protocol: "http",
     }).pipe(Layer.provide(HandlerLayers), Layer.provide(InfraLayers));
 
-    // Full app layer (all routes registered into HttpLayerRouter)
-    // Note: BlobUploadRoute's per-request deps (SqlClient, BlobStore) appear as
-    // Request.From<"Requires", ...> — they are extracted by serve() and provided after.
     const AppLayer = Layer.mergeAll(RpcLayer, BlobUploadRoute);
 
     return HttpLayerRouter.serve(AppLayer).pipe(
@@ -138,6 +141,6 @@ const MainLayer = Layer.unwrapEffect(
       Layer.provide(BlobStoreLayer),
     );
   }),
-);
+).pipe(Layer.provide(NodeContext.layer));
 
 NodeRuntime.runMain(Layer.launch(MainLayer));

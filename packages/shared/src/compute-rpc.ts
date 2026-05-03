@@ -4,7 +4,7 @@ import * as RpcMiddleware from "@effect/rpc/RpcMiddleware";
 import * as Context from "effect/Context";
 import * as Schema from "effect/Schema";
 
-import { DocumentId, UserId, ExportFormat, ExportStructure, KeyRotationProgress } from "./domain.js";
+import { DocumentId, ExportFormat, ExportStructure, KeyRotationProgress } from "./domain.js";
 import {
   InvalidSessionError,
   NotFoundError,
@@ -19,7 +19,7 @@ import {
 
 export class ComputeAuthContext extends Context.Tag("@dossier/compute/AuthContext")<
   ComputeAuthContext,
-  { readonly userId: UserId; readonly sessionToken: string }
+  { readonly sessionToken: string }
 >() {}
 
 // --- Middleware ---
