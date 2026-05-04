@@ -1,14 +1,17 @@
 import { STORAGE_SESSION_HEADER } from "@dossier/shared";
-import type { Collection, Tag } from "@dossier/shared";
+import type { Collection, DocumentMeta, Tag } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+import { useEffect, useRef, useState } from "react";
 
-import type { DocumentMeta } from "@dossier/shared";
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, type UnlockedSession } from "../session.js";
 import { Route as authRoute } from "./_auth.js";
+import { previewAtom, previewDataAtom, type PreviewTarget } from "./_auth.index.preview.js";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
 import {
   appendCursor,
   docListAtom,
@@ -102,6 +105,7 @@ function DocumentsPage() {
       </table>
 
       <UploadDialog session={session} />
+      <DocumentPreview />
     </div>
   );
 }
@@ -355,8 +359,14 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token,
 // --- Single row ---
 
 function DocumentRow({ doc }: { doc: DocumentMeta }) {
+  const setPreview = useAtomSet(previewAtom);
+  const target: PreviewTarget = { documentId: doc.id, format: doc.format, name: doc.name };
+
   return (
-    <tr className="border-b border-gray-100 hover:bg-gray-50">
+    <tr
+      className="border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+      onClick={() => setPreview(target)}
+    >
       <td className="py-2 pr-4 font-medium text-gray-900">{doc.name}</td>
       <td className="py-2 pr-4 text-xs uppercase text-gray-500">{doc.format}</td>
       <td className="py-2 pr-4">
@@ -400,4 +410,106 @@ function SortButton({
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+// --- Document preview ---
+
+function DocumentPreview() {
+  const target = useAtomValue(previewAtom);
+  const setPreview = useAtomSet(previewAtom);
+  const dataResult = useAtomValue(previewDataAtom);
+
+  if (!target) return null;
+
+  const isLoading = Result.isWaiting(dataResult);
+  const error = Result.isFailure(dataResult) ? "Failed to load preview." : null;
+  const bytes = Result.isSuccess(dataResult) ? dataResult.value : null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="preview-dialog-title"
+      className="fixed inset-0 z-50 flex flex-col bg-black/80"
+      onClick={() => setPreview(null)}
+    >
+      <div className="flex h-14 shrink-0 items-center justify-between bg-gray-900 px-4">
+        <h2 id="preview-dialog-title" className="truncate text-sm font-medium text-white">
+          {target.name}
+        </h2>
+        <button
+          type="button"
+          onClick={() => setPreview(null)}
+          className="ml-4 shrink-0 rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
+          aria-label="Close preview"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div
+        className="flex flex-1 items-start justify-center overflow-auto p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isLoading && (
+          <p className="mt-16 text-sm text-gray-400">Loading…</p>
+        )}
+        {error && (
+          <p className="mt-16 text-sm text-red-400">{error}</p>
+        )}
+        {bytes && target.format === "pdf" && <PdfViewer bytes={bytes} />}
+        {bytes && (target.format === "jpg" || target.format === "png") && (
+          <ImageViewer bytes={bytes} format={target.format} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PdfViewer({ bytes }: { bytes: Uint8Array }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadingTask = pdfjsLib.getDocument({ data: bytes });
+
+    loadingTask.promise.then(async (pdf) => {
+      if (cancelled || !containerRef.current) return;
+      containerRef.current.innerHTML = "";
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        if (cancelled) break;
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.className = "mb-2 shadow";
+        containerRef.current.appendChild(canvas);
+        const ctx = canvas.getContext("2d");
+        if (ctx) await page.render({ canvasContext: ctx, viewport }).promise;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      loadingTask.destroy();
+    };
+  }, [bytes]);
+
+  return <div ref={containerRef} className="flex flex-col items-center" />;
+}
+
+function ImageViewer({ bytes, format }: { bytes: Uint8Array; format: "jpg" | "png" }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
+    const objectUrl = URL.createObjectURL(new Blob([bytes as unknown as ArrayBuffer], { type: mimeType }));
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [bytes, format]);
+
+  if (!url) return null;
+  return <img src={url} alt="Document preview" className="max-w-full rounded shadow" />;
 }
