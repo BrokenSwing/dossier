@@ -1,5 +1,5 @@
 import { STORAGE_SESSION_HEADER } from "@dossier/shared";
-import type { Collection, DocumentMeta, Tag } from "@dossier/shared";
+import type { Collection, CollectionId, DocumentMeta, Tag } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute } from "@tanstack/react-router";
@@ -29,6 +29,27 @@ import {
   type EditDocumentDialogState,
   type RenameDialogState,
 } from "./_auth.index.actions.js";
+import {
+  confirmDeleteCollectionAtom,
+  createCollectionAtom,
+  createCollectionDialogAtom,
+  deleteCollectionAtom,
+  editCollectionDialogAtom,
+  moveCollectionAtom,
+  moveCollectionDialogAtom,
+  openCreateCollectionDialog,
+  openEditCollectionDialog,
+  openMoveCollectionDialog,
+  selectedCollectionAtom,
+  setCreateCollectionName,
+  setEditCollectionName,
+  setEditWatermarkText,
+  setMoveCollectionParent,
+  updateCollectionAtom,
+  type CreateCollectionDialogState,
+  type EditCollectionDialogState,
+  type MoveCollectionDialogState,
+} from "./_auth.index.collections.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
 import {
@@ -67,6 +88,7 @@ function DocumentsPage() {
   const state = useAtomValue(docListAtom);
   const setState = useAtomSet(docListAtom);
   const setUploadOpen = useAtomSet(uploadOpenAtom);
+  const selectedCollection = useAtomValue(selectedCollectionAtom);
 
   return (
     <div className="flex flex-col gap-4 p-6">
@@ -115,6 +137,7 @@ function DocumentsPage() {
               sortField={state.sortField}
               sortDirection={state.sortDirection}
               nameFilter={state.nameFilter || undefined}
+              collectionFilter={selectedCollection ?? undefined}
               cursor={cursor}
               token={session.token}
               isLastPage={i === state.cursors.length - 1}
@@ -129,6 +152,10 @@ function DocumentsPage() {
       <RenameDialog />
       <EditDocumentDialog session={session} />
       <DeleteConfirmDialog />
+      <CreateCollectionDialog />
+      <EditCollectionDialog />
+      <DeleteCollectionConfirmDialog />
+      <MoveCollectionDialog />
     </div>
   );
 }
@@ -314,16 +341,17 @@ interface PageRowsProps {
   readonly sortField: SortField;
   readonly sortDirection: SortDirection;
   readonly nameFilter: string | undefined;
+  readonly collectionFilter: CollectionId | undefined;
   readonly cursor: string | undefined;
   readonly token: string;
   readonly isLastPage: boolean;
   readonly onLoadMore: (nextCursor: string) => void;
 }
 
-function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token, isLastPage, onLoadMore }: PageRowsProps) {
+function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilter, cursor, token, isLastPage, onLoadMore }: PageRowsProps) {
   const queryAtom = StorageRpc.query(
     "ListDocuments",
-    { sortField, sortDirection, nameFilter, cursor, limit: 20 },
+    { sortField, sortDirection, nameFilter, collectionFilter, cursor, limit: 20 },
     { headers: { [STORAGE_SESSION_HEADER]: token }, reactivityKeys: { documents: [] } },
   );
 
@@ -464,6 +492,266 @@ function SortButton({
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+// --- Create collection dialog ---
+
+function CreateCollectionDialog() {
+  const state = useAtomValue(createCollectionDialogAtom);
+  const setState = useAtomSet(createCollectionDialogAtom);
+  const create = useAtomSet(createCollectionAtom, { mode: "promiseExit" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!state) return null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!state || !state.name.trim()) return;
+    setLoading(true);
+    setError(null);
+    const exit = await create({ name: state.name.trim(), parentId: state.parentId });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setState(null);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Failed to create collection.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="create-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="create-col-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">
+          {state.parentId ? "New sub-collection" : "New collection"}
+        </h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="create-col-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <input
+              id="create-col-name"
+              type="text"
+              value={state.name}
+              onChange={(e) => setState(setCreateCollectionName(state, e.target.value))}
+              className="input w-full"
+              autoFocus
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={!state.name.trim() || loading} className="btn btn-primary">
+              {loading ? "Creating…" : "Create"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- Edit collection dialog (rename + watermark) ---
+
+function EditCollectionDialog() {
+  const state = useAtomValue(editCollectionDialogAtom);
+  const setState = useAtomSet(editCollectionDialogAtom);
+  const update = useAtomSet(updateCollectionAtom, { mode: "promiseExit" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!state) return null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!state || !state.name.trim()) return;
+    setLoading(true);
+    setError(null);
+    const exit = await update({
+      collectionId: state.collectionId,
+      name: state.name.trim(),
+      watermarkText: state.watermarkText,
+    });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setState(null);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Failed to update collection.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="edit-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="edit-col-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Edit collection</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="edit-col-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <input
+              id="edit-col-name"
+              type="text"
+              value={state.name}
+              onChange={(e) => setState(setEditCollectionName(state, e.target.value))}
+              className="input w-full"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-col-watermark" className="mb-1 block text-sm font-medium text-gray-700">
+              Watermark text
+            </label>
+            <input
+              id="edit-col-watermark"
+              type="text"
+              value={state.watermarkText}
+              onChange={(e) => setState(setEditWatermarkText(state, e.target.value))}
+              placeholder="Leave empty to remove watermark"
+              className="input w-full"
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={!state.name.trim() || loading} className="btn btn-primary">
+              {loading ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- Delete collection confirmation dialog ---
+
+function DeleteCollectionConfirmDialog() {
+  const collection = useAtomValue(confirmDeleteCollectionAtom);
+  const setCollection = useAtomSet(confirmDeleteCollectionAtom);
+  const deleteCol = useAtomSet(deleteCollectionAtom, { mode: "promiseExit" });
+  const [recursive, setRecursive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!collection) return null;
+
+  async function handleDelete() {
+    if (!collection) return;
+    setLoading(true);
+    setError(null);
+    const exit = await deleteCol({ collectionId: collection.id, recursive });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setCollection(null);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Delete failed. Please try again.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="delete-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="delete-col-dialog-title" className="mb-2 text-lg font-semibold text-gray-900">Delete collection</h2>
+        <p className="mb-3 text-sm text-gray-600">
+          Are you sure you want to delete <strong>{collection.name}</strong>?
+        </p>
+        <label className="mb-4 flex items-center gap-2 text-sm text-gray-700">
+          <input type="checkbox" checked={recursive} onChange={(e) => setRecursive(e.target.checked)} />
+          Also delete all sub-collections
+        </label>
+        {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => setCollection(null)} className="btn btn-secondary" disabled={loading}>
+            Cancel
+          </button>
+          <button type="button" onClick={handleDelete} disabled={loading} className="btn btn-danger">
+            {loading ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Move collection dialog ---
+
+function MoveCollectionDialog() {
+  const state = useAtomValue(moveCollectionDialogAtom);
+  const setState = useAtomSet(moveCollectionDialogAtom);
+  const move = useAtomSet(moveCollectionAtom, { mode: "promiseExit" });
+  const session = useAtomValue(sessionAtom) as UnlockedSession;
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const collectionsQueryAtom = StorageRpc.query("ListCollections", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+    reactivityKeys: { collections: [] },
+  });
+  const collectionsResult = useAtomValue(collectionsQueryAtom);
+  const collections: ReadonlyArray<Collection> = Result.isSuccess(collectionsResult) ? collectionsResult.value : [];
+
+  if (!state) return null;
+
+  const candidates = collections.filter((c) => c.id !== state.collectionId);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!state) return;
+    setLoading(true);
+    setError(null);
+    const exit = await move({ collectionId: state.collectionId, newParentId: state.newParentId });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setState(null);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Move failed. Please try again.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="move-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="move-col-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">
+          Move "{state.collectionName}"
+        </h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="move-col-parent" className="mb-1 block text-sm font-medium text-gray-700">New parent</label>
+            <select
+              id="move-col-parent"
+              value={state.newParentId ?? ""}
+              onChange={(e) =>
+                setState(setMoveCollectionParent(state, e.target.value ? e.target.value as CollectionId : null))
+              }
+              className="input w-full"
+            >
+              <option value="">None (root level)</option>
+              {candidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? "Moving…" : "Move"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // --- Rename dialog ---
