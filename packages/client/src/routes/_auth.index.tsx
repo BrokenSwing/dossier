@@ -5,11 +5,30 @@ import * as Result from "@effect-atom/atom/Result";
 import { createRoute } from "@tanstack/react-router";
 import * as pdfjsLib from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
+import React from "react";
 
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, type UnlockedSession } from "../session.js";
 import { Route as authRoute } from "./_auth.js";
 import { previewAtom, previewDataAtom, type PreviewTarget } from "./_auth.index.preview.js";
+import {
+  addEditTag,
+  confirmDeleteAtom,
+  deleteAtom,
+  editDocumentDialogAtom,
+  openEditDocumentDialog,
+  openRenameDialog,
+  removeEditTag,
+  renameAtom,
+  renameDialogAtom,
+  setEditTagInput,
+  setRenameName,
+  toggleEditCollection,
+  updateCollectionsAtom,
+  updateTagsAtom,
+  type EditDocumentDialogState,
+  type RenameDialogState,
+} from "./_auth.index.actions.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
 import {
@@ -86,6 +105,7 @@ function DocumentsPage() {
                 onClick={() => setState(toggleSort(state, "createdAt"))}
               />
             </th>
+            <th className="pb-2 text-xs font-medium tracking-wide text-gray-500 uppercase" />
           </tr>
         </thead>
         <tbody>
@@ -106,6 +126,9 @@ function DocumentsPage() {
 
       <UploadDialog session={session} />
       <DocumentPreview />
+      <RenameDialog />
+      <EditDocumentDialog session={session} />
+      <DeleteConfirmDialog />
     </div>
   );
 }
@@ -311,7 +334,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token,
     if (Result.isFailure(result)) {
       return (
         <tr>
-          <td colSpan={4} className="py-8 text-center text-sm text-red-500">
+          <td colSpan={5} className="py-8 text-center text-sm text-red-500">
             Failed to load documents.
           </td>
         </tr>
@@ -319,7 +342,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token,
     }
     return (
       <tr>
-        <td colSpan={4} className="py-8 text-center text-sm text-gray-400">
+        <td colSpan={5} className="py-8 text-center text-sm text-gray-400">
           Loading…
         </td>
       </tr>
@@ -331,7 +354,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token,
   if (documents.length === 0 && !cursor) {
     return (
       <tr>
-        <td colSpan={4} className="py-8 text-center text-sm text-gray-400">
+        <td colSpan={5} className="py-8 text-center text-sm text-gray-400">
           No documents yet.
         </td>
       </tr>
@@ -345,7 +368,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token,
       ))}
       {isLastPage && nextCursor && (
         <tr>
-          <td colSpan={4} className="pt-4 pb-2 text-center">
+          <td colSpan={5} className="pt-4 pb-2 text-center">
             <button type="button" onClick={() => onLoadMore(nextCursor)} className="text-sm text-blue-600 hover:text-blue-500">
               Load more
             </button>
@@ -360,11 +383,14 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, cursor, token,
 
 function DocumentRow({ doc }: { doc: DocumentMeta }) {
   const setPreview = useAtomSet(previewAtom);
+  const setRenameDialog = useAtomSet(renameDialogAtom);
+  const setEditDialog = useAtomSet(editDocumentDialogAtom);
+  const setConfirmDelete = useAtomSet(confirmDeleteAtom);
   const target: PreviewTarget = { documentId: doc.id, format: doc.format, name: doc.name };
 
   return (
     <tr
-      className="border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+      className="group border-b border-gray-100 cursor-pointer hover:bg-gray-50"
       onClick={() => setPreview(target)}
     >
       <td className="py-2 pr-4 font-medium text-gray-900">{doc.name}</td>
@@ -379,6 +405,34 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
         </div>
       </td>
       <td className="py-2 whitespace-nowrap text-gray-500">{formatDate(doc.createdAt)}</td>
+      <td className="py-2 whitespace-nowrap text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            aria-label={`Rename ${doc.name}`}
+            onClick={(e) => { e.stopPropagation(); setRenameDialog(openRenameDialog(doc)); }}
+            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+          >
+            Rename
+          </button>
+          <button
+            type="button"
+            aria-label={`Edit tags and collections for ${doc.name}`}
+            onClick={(e) => { e.stopPropagation(); setEditDialog(openEditDocumentDialog(doc)); }}
+            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete ${doc.name}`}
+            onClick={(e) => { e.stopPropagation(); setConfirmDelete(doc); }}
+            className="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-700"
+          >
+            Delete
+          </button>
+        </div>
+      </td>
     </tr>
   );
 }
@@ -410,6 +464,261 @@ function SortButton({
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+// --- Rename dialog ---
+
+function RenameDialog() {
+  const state = useAtomValue(renameDialogAtom);
+  const setState = useAtomSet(renameDialogAtom);
+  const rename = useAtomSet(renameAtom, { mode: "promiseExit" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!state) return null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!state || !state.name.trim()) return;
+    setLoading(true);
+    setError(null);
+    const exit = await rename({ documentId: state.documentId, name: state.name.trim() });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setState(null);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Rename failed. Please try again.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="rename-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Rename document</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="rename-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <input
+              id="rename-name"
+              type="text"
+              value={state.name}
+              onChange={(e) => setState(setRenameName(state, e.target.value))}
+              className="input w-full"
+              autoFocus
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={!state.name.trim() || loading} className="btn btn-primary">
+              {loading ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- Edit document dialog (tags + collections) ---
+
+function EditDocumentDialog({ session }: { session: UnlockedSession }) {
+  const state = useAtomValue(editDocumentDialogAtom);
+  const setState = useAtomSet(editDocumentDialogAtom);
+  const updateTags = useAtomSet(updateTagsAtom, { mode: "promiseExit" });
+  const updateCollections = useAtomSet(updateCollectionsAtom, { mode: "promiseExit" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const tagsQueryAtom = StorageRpc.query("ListTags", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+  });
+  const tagsResult = useAtomValue(tagsQueryAtom);
+
+  const collectionsQueryAtom = StorageRpc.query("ListCollections", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+  });
+  const collectionsResult = useAtomValue(collectionsQueryAtom);
+
+  if (!state) return null;
+
+  const availableTags: ReadonlyArray<Tag> = Result.isSuccess(tagsResult) ? tagsResult.value : [];
+  const filteredSuggestions = state.tagInput.trim()
+    ? availableTags
+        .filter(
+          (t) =>
+            t.name.toLowerCase().includes(state.tagInput.toLowerCase()) &&
+            !state.selectedTags.includes(t.name),
+        )
+        .slice(0, 5)
+    : [];
+  const collections: ReadonlyArray<Collection> = Result.isSuccess(collectionsResult) ? collectionsResult.value : [];
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!state) return;
+    setLoading(true);
+    setError(null);
+    const tagsExit = await updateTags({ documentId: state.documentId, tagNames: state.selectedTags });
+    if (tagsExit._tag !== "Success") {
+      setLoading(false);
+      const cause = tagsExit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Failed to update tags.");
+      return;
+    }
+    const colsExit = await updateCollections({
+      documentId: state.documentId,
+      collectionIds: state.selectedCollectionIds,
+    });
+    setLoading(false);
+    if (colsExit._tag === "Success") {
+      setState(null);
+    } else {
+      const cause = colsExit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Failed to update collections.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="edit-doc-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="edit-doc-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Edit document</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="edit-tag-input" className="mb-1 block text-sm font-medium text-gray-700">Tags</label>
+            {state.selectedTags.length > 0 && (
+              <div className="mb-1 flex flex-wrap gap-1">
+                {state.selectedTags.map((tag) => (
+                  <span key={tag} className="flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setState(removeEditTag(state, tag))}
+                      className="text-blue-500 hover:text-blue-700"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="relative">
+              <input
+                id="edit-tag-input"
+                type="text"
+                value={state.tagInput}
+                onChange={(e) => setState(setEditTagInput(state, e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && state.tagInput.trim()) {
+                    e.preventDefault();
+                    setState(addEditTag(state, state.tagInput.trim()));
+                  }
+                }}
+                className="input w-full"
+                placeholder="Add tag and press Enter…"
+              />
+              {filteredSuggestions.length > 0 && (
+                <ul className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow-sm">
+                  {filteredSuggestions.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setState(addEditTag(state, t.name));
+                        }}
+                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50"
+                      >
+                        {t.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {collections.length > 0 && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Collections</label>
+              <div className="max-h-32 overflow-y-auto rounded border border-gray-200 p-2">
+                {collections.map((c) => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={state.selectedCollectionIds.includes(c.id)}
+                      onChange={() => setState(toggleEditCollection(state, c.id))}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- Delete confirmation dialog ---
+
+function DeleteConfirmDialog() {
+  const doc = useAtomValue(confirmDeleteAtom);
+  const setDoc = useAtomSet(confirmDeleteAtom);
+  const deleteDoc = useAtomSet(deleteAtom, { mode: "promiseExit" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  if (!doc) return null;
+
+  async function handleDelete() {
+    if (!doc) return;
+    setLoading(true);
+    setError(null);
+    const exit = await deleteDoc({ documentId: doc.id });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setDoc(null);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? cause.error.message : "Delete failed. Please try again.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="delete-dialog-title" className="mb-2 text-lg font-semibold text-gray-900">Delete document</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Are you sure you want to delete <strong>{doc.name}</strong>? This cannot be undone.
+        </p>
+        {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => setDoc(null)} className="btn btn-secondary" disabled={loading}>
+            Cancel
+          </button>
+          <button type="button" onClick={handleDelete} disabled={loading} className="btn btn-danger">
+            {loading ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // --- Document preview ---
