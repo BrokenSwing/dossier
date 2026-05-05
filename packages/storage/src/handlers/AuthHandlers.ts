@@ -14,7 +14,7 @@ import * as argon2 from "argon2";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { authenticator } from "otplib";
 
 import { AppConfig } from "../Config.js";

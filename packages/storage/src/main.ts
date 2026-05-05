@@ -15,7 +15,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 import { AppConfig } from "./Config.js";
 import { accountHandlers } from "./handlers/AccountHandlers.js";
@@ -83,7 +83,7 @@ const BlobUploadRoute = HttpLayerRouter.add("PUT", "/blobs/:blobKey", (req) =>
 // in a closure so the SqliteMigrator.fromRecord effect only requires SqlClient.
 const readMigrationSql = Effect.gen(function* () {
   const fs = yield* FileSystem;
-  return yield* fs.readFileString(fileURLToPath(new URL("../../migrations/001_initial.sql", import.meta.url)));
+  return yield* fs.readFileString(fileURLToPath(new URL("../migrations/001_initial.sql", import.meta.url)));
 });
 
 const MainLayer = Layer.unwrapEffect(
@@ -130,7 +130,7 @@ const MainLayer = Layer.unwrapEffect(
       protocol: "http",
     }).pipe(Layer.provide(HandlerLayers), Layer.provide(InfraLayers));
 
-    const AppLayer = Layer.mergeAll(RpcLayer, BlobUploadRoute);
+    const AppLayer = Layer.mergeAll(RpcLayer, BlobUploadRoute, HttpLayerRouter.cors());
 
     return HttpLayerRouter.serve(AppLayer).pipe(
       Layer.provide(NodeHttpServer.layer(() => http.createServer(), { port })),

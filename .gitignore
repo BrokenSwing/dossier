@@ -3,3 +3,6 @@ dist/
 .env
 .env.*
 !.env.example
+storage.db
+storage.db-shm
+storage.db-wal

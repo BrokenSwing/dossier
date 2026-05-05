@@ -1,7 +1,7 @@
 import { StorageSessionRpcs, STORAGE_SESSION_HEADER, InternalError } from "@dossier/shared";
 import { SqlClient } from "@effect/sql/SqlClient";
 import * as Effect from "effect/Effect";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 export const sessionHandlers = StorageSessionRpcs.toLayer({
   // The handler receives (payload, options) where options.headers has the request headers.

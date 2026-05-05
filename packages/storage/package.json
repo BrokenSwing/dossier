@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "node --watch dist/main.js",
+    "build": "tsc",
+    "dev": "node --env-file=.env --watch dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "effect-language-service patch"

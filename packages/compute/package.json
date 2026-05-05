@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "node --watch dist/main.js",
+    "build": "tsc",
+    "dev": "node --env-file=.env --watch dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "effect-language-service patch"
@@ -13,7 +14,7 @@
   "dependencies": {
     "@dossier/shared": "workspace:*",
     "@effect/platform": "0.96.0",
-    "@effect/platform-node": "0.96.0",
+    "@effect/platform-node": "0.106.0",
     "@effect/rpc": "0.75.0",
     "archiver": "^7.0.0",
     "effect": "3.21.1",

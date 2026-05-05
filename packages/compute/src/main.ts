@@ -39,7 +39,7 @@ const MainLayer = Layer.unwrapEffect(
       protocol: "http",
     }).pipe(Layer.provide(HandlerLayer), Layer.provide(InfraLayers));
 
-    const AppLayer = Layer.mergeAll(RpcLayer, UploadRoute);
+    const AppLayer = Layer.mergeAll(RpcLayer, UploadRoute, HttpLayerRouter.cors());
 
     return HttpLayerRouter.serve(AppLayer).pipe(
       Layer.provide(NodeHttpServer.layer(() => http.createServer(), { port })),
