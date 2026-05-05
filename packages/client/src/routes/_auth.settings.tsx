@@ -22,11 +22,25 @@ export const Route = createRoute({
 
 function SettingsPage() {
   return (
-    <div className="flex flex-col gap-8 p-6">
-      <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
-      <ChangePasswordSection />
-      <hr className="border-gray-200" />
-      <KeyRotationSection />
+    <div className="flex flex-col gap-6 p-4 sm:p-6">
+      <div>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage your account and security preferences.</p>
+      </div>
+      <div className="flex flex-col gap-4">
+        <ChangePasswordSection />
+        <KeyRotationSection />
+      </div>
+    </div>
+  );
+}
+
+function SettingsCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <div className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xs ring-1 ring-border">
+      <h2 className="mb-1 text-base font-semibold text-foreground">{title}</h2>
+      <p className="mb-5 text-sm text-muted-foreground">{description}</p>
+      {children}
     </div>
   );
 }
@@ -69,35 +83,34 @@ function ChangePasswordSection() {
   }
 
   return (
-    <section className="max-w-md">
-      <h2 className="mb-4 text-base font-semibold text-gray-900">Change password</h2>
+    <SettingsCard title="Change password" description="Update your master password. All existing sessions will be invalidated.">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="old-password" className="mb-1 block text-sm font-medium text-gray-700">Current password</label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-foreground">Current password</span>
           <input id="old-password" type="password" autoComplete="current-password" value={form.oldPassword}
-            onChange={(e) => setForm(setOldPassword(form, e.target.value))} className="input w-full" required />
-        </div>
-        <div>
-          <label htmlFor="new-password" className="mb-1 block text-sm font-medium text-gray-700">New password</label>
+            onChange={(e) => setForm(setOldPassword(form, e.target.value))} className="input" required />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-foreground">New password</span>
           <input id="new-password" type="password" autoComplete="new-password" value={form.newPassword}
-            onChange={(e) => setForm(setNewPassword(form, e.target.value))} className="input w-full" required />
-        </div>
-        <div>
-          <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium text-gray-700">Confirm new password</label>
+            onChange={(e) => setForm(setNewPassword(form, e.target.value))} className="input" required />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-foreground">Confirm new password</span>
           <input id="confirm-password" type="password" autoComplete="new-password" value={form.confirmPassword}
             onChange={(e) => setForm(setConfirmPassword(form, e.target.value))}
-            className={`input w-full ${passwordMismatch ? "border-red-400 focus:ring-red-400" : ""}`} required />
-          {passwordMismatch && <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>}
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">Password changed. Redirecting to login…</p>}
+            className={`input ${passwordMismatch ? "border-destructive focus-visible:ring-destructive/30" : ""}`} required />
+          {passwordMismatch && <p className="text-xs text-destructive">Passwords do not match.</p>}
+        </label>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        {success && <p className="text-sm text-primary">Password changed. Redirecting to login…</p>}
         <div>
-          <button type="submit" disabled={!valid || loading} className="btn btn-primary">
+          <button type="submit" disabled={!valid || loading} className="btn-primary">
             {loading ? "Changing password…" : "Change password"}
           </button>
         </div>
       </form>
-    </section>
+    </SettingsCard>
   );
 }
 
@@ -145,28 +158,26 @@ function KeyRotationSection() {
   };
 
   return (
-    <section className="max-w-md">
-      <h2 className="mb-1 text-base font-semibold text-gray-900">Rotate encryption key</h2>
-      <p className="mb-4 text-sm text-gray-500">
-        Generates a new data encryption key and re-encrypts all your documents. This operation cannot be interrupted once started.
-      </p>
-
+    <SettingsCard
+      title="Rotate encryption key"
+      description="Generates a new data encryption key and re-encrypts all your documents. This operation cannot be interrupted once started."
+    >
       {phase === "idle" && (
-        <button type="button" onClick={() => setPhase("confirm")} className="btn btn-secondary">
+        <button type="button" onClick={() => setPhase("confirm")} className="btn-outline">
           Rotate key…
         </button>
       )}
 
       {phase === "confirm" && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="mb-3 text-sm font-medium text-amber-800">
+        <div className="rounded-lg border border-border bg-muted/60 p-4">
+          <p className="mb-3 text-sm font-medium text-foreground">
             Are you sure? This will re-encrypt every document you own. The process may take several minutes.
           </p>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setPhase("enter-password")} className="btn btn-primary">
+            <button type="button" onClick={() => setPhase("enter-password")} className="btn-primary">
               Continue
             </button>
-            <button type="button" onClick={() => setPhase("idle")} className="btn btn-secondary">
+            <button type="button" onClick={() => setPhase("idle")} className="btn-outline">
               Cancel
             </button>
           </div>
@@ -175,11 +186,11 @@ function KeyRotationSection() {
 
       {phase === "enter-password" && (
         <form onSubmit={handleRotate} className="flex flex-col gap-4">
-          <p className="text-sm text-gray-600">
-            Enter your current password to authorise key rotation for <strong>{session.username}</strong>.
+          <p className="text-sm text-muted-foreground">
+            Enter your current password to authorise key rotation for <strong className="text-foreground">{session.username}</strong>.
           </p>
-          <div>
-            <label htmlFor="rotation-password" className="mb-1 block text-sm font-medium text-gray-700">Password</label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-foreground">Password</span>
             <input
               id="rotation-password"
               type="password"
@@ -187,16 +198,16 @@ function KeyRotationSection() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input w-full"
+              className="input"
               required
             />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          </label>
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
-            <button type="submit" disabled={!password} className="btn btn-primary">
+            <button type="submit" disabled={!password} className="btn-primary">
               Start rotation
             </button>
-            <button type="button" onClick={() => { setPhase("idle"); setPassword(""); setError(null); }} className="btn btn-secondary">
+            <button type="button" onClick={() => { setPhase("idle"); setPassword(""); setError(null); }} className="btn-outline">
               Cancel
             </button>
           </div>
@@ -205,32 +216,32 @@ function KeyRotationSection() {
 
       {phase === "rotating" && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-foreground">
             {progress ? phaseLabel[progress.phase] : "Starting…"}
             {progress && progress.total > 0 && (
-              <span className="ml-2 text-gray-400">
+              <span className="ml-2 text-muted-foreground">
                 {progress.processed}/{progress.total}
               </span>
             )}
           </p>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-blue-600 transition-all duration-300"
+              className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progress?.phase === "finalizing" ? 100 : pct}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400">Do not close this page.</p>
+          <p className="text-xs text-muted-foreground">Do not close this page.</p>
         </div>
       )}
 
       {phase === "done" && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-          <p className="text-sm font-medium text-green-800">Key rotation complete. All documents have been re-encrypted.</p>
-          <button type="button" onClick={() => setPhase("idle")} className="mt-3 btn btn-secondary">
+        <div className="rounded-lg border border-border bg-secondary/40 p-4">
+          <p className="text-sm font-medium text-foreground">Key rotation complete. All documents have been re-encrypted.</p>
+          <button type="button" onClick={() => setPhase("idle")} className="mt-3 btn-outline">
             Done
           </button>
         </div>
       )}
-    </section>
+    </SettingsCard>
   );
 }

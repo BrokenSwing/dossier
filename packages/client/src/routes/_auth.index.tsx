@@ -140,17 +140,17 @@ function DocumentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-gray-900">Documents</h1>
+    <div className="flex flex-col gap-4 p-4 sm:p-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-lg font-semibold text-foreground">Documents</h1>
         <input
           type="search"
           placeholder="Search by name…"
           value={state.nameFilter}
           onChange={(e) => setState(setNameFilter(state, e.target.value))}
-          className="input w-full max-w-sm"
+          className="input min-w-0 flex-1 sm:max-w-sm"
         />
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button type="button" onClick={openExport} className="btn btn-secondary">
             Export
           </button>
@@ -162,33 +162,34 @@ function DocumentsPage() {
 
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-gray-500">Filtered by tags:</span>
+          <span className="text-xs text-muted-foreground">Tags:</span>
           {selectedTags.map((id, i) => (
             <button
               key={id}
               type="button"
               onClick={() => setSelectedTags(toggleTag(selectedTags, id))}
               aria-label={`Remove tag filter ${activeTagNames[i]}`}
-              className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200"
+              className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/20"
             >
               {activeTagNames[i]}
-              <span aria-hidden="true">×</span>
+              <span aria-hidden="true" className="opacity-60">×</span>
             </button>
           ))}
           <button
             type="button"
             onClick={() => setSelectedTags(clearTags(selectedTags))}
-            className="text-xs text-gray-400 hover:text-gray-700"
+            className="text-xs text-muted-foreground hover:text-foreground"
           >
             Clear all
           </button>
         </div>
       )}
 
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left">
-            <th className="pb-2 pr-4 text-xs font-medium tracking-wide text-gray-500 uppercase">
+          <tr className="border-b border-border bg-muted/40 text-left">
+            <th className="px-4 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               <SortButton
                 label="Name"
                 active={state.sortField === "name"}
@@ -196,9 +197,9 @@ function DocumentsPage() {
                 onClick={() => setState(toggleSort(state, "name"))}
               />
             </th>
-            <th className="pb-2 pr-4 text-xs font-medium tracking-wide text-gray-500 uppercase">Format</th>
-            <th className="pb-2 pr-4 text-xs font-medium tracking-wide text-gray-500 uppercase">Tags</th>
-            <th className="pb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
+            <th className="hidden py-2.5 pr-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">Format</th>
+            <th className="hidden py-2.5 pr-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:table-cell">Tags</th>
+            <th className="hidden py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
               <SortButton
                 label="Date"
                 active={state.sortField === "createdAt"}
@@ -206,7 +207,7 @@ function DocumentsPage() {
                 onClick={() => setState(toggleSort(state, "createdAt"))}
               />
             </th>
-            <th className="pb-2 text-xs font-medium tracking-wide text-gray-500 uppercase" />
+            <th className="py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase" />
           </tr>
         </thead>
         <tbody>
@@ -226,6 +227,7 @@ function DocumentsPage() {
           ))}
         </tbody>
       </table>
+      </div>
 
       <UploadDialog session={session} />
       <ExportDialog />
@@ -298,12 +300,12 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="upload-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="upload-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Upload document</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="upload-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="upload-dialog-title" className="mb-4 text-base font-semibold text-foreground">Upload document</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="upload-file" className="mb-1 block text-sm font-medium text-gray-700">File</label>
+            <label htmlFor="upload-file" className="mb-1 block text-sm font-medium text-foreground">File</label>
             <input
               id="upload-file"
               type="file"
@@ -312,12 +314,12 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
                 const f = e.target.files?.[0];
                 if (f) setForm(setFile(form, f));
               }}
-              className="block w-full text-sm text-gray-500 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-gray-200"
+              className="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground hover:file:bg-secondary/80"
             />
           </div>
 
           <div>
-            <label htmlFor="upload-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="upload-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
             <input
               id="upload-name"
               type="text"
@@ -329,16 +331,16 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
           </div>
 
           <div>
-            <label htmlFor="upload-tag-input" className="mb-1 block text-sm font-medium text-gray-700">Tags</label>
+            <label htmlFor="upload-tag-input" className="mb-1 block text-sm font-medium text-foreground">Tags</label>
             {form.selectedTags.length > 0 && (
               <div className="mb-1 flex flex-wrap gap-1">
                 {form.selectedTags.map((tag) => (
-                  <span key={tag} className="flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                  <span key={tag} className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                     {tag}
                     <button
                       type="button"
                       onClick={() => setForm(removeTag(form, tag))}
-                      className="text-blue-500 hover:text-blue-700"
+                      className="opacity-60 hover:opacity-100"
                       aria-label={`Remove tag ${tag}`}
                     >
                       ×
@@ -363,7 +365,7 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
               placeholder="Add tag and press Enter…"
               />
               {filteredSuggestions.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow-sm">
+                <ul className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-md">
                   {filteredSuggestions.map((t) => (
                     <li key={t.id}>
                       <button
@@ -372,7 +374,7 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
                           e.preventDefault();
                           setForm(addTag(form, t.name));
                         }}
-                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50"
+                        className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted/50 transition-colors"
                       >
                         {t.name}
                       </button>
@@ -385,8 +387,8 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
 
           {collections.length > 0 && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Collections</label>
-              <div className="max-h-32 overflow-y-auto rounded border border-gray-200 p-2">
+              <label className="mb-1 block text-sm font-medium text-foreground">Collections</label>
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-border p-2">
                 {collections.map((c) => (
                   <label key={c.id} className="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
                     <input
@@ -401,7 +403,7 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={close} className="btn btn-secondary" disabled={loading}>
@@ -445,7 +447,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilt
     if (Result.isFailure(result)) {
       return (
         <tr>
-          <td colSpan={5} className="py-8 text-center text-sm text-red-500">
+          <td colSpan={5} className="py-8 text-center text-sm text-destructive">
             Failed to load documents.
           </td>
         </tr>
@@ -453,7 +455,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilt
     }
     return (
       <tr>
-        <td colSpan={5} className="py-8 text-center text-sm text-gray-400">
+        <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
           Loading…
         </td>
       </tr>
@@ -465,7 +467,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilt
   if (documents.length === 0 && !cursor) {
     return (
       <tr>
-        <td colSpan={5} className="py-8 text-center text-sm text-gray-400">
+        <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
           No documents yet.
         </td>
       </tr>
@@ -480,7 +482,7 @@ function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilt
       {isLastPage && nextCursor && (
         <tr>
           <td colSpan={5} className="pt-4 pb-2 text-center">
-            <button type="button" onClick={() => onLoadMore(nextCursor)} className="text-sm text-blue-600 hover:text-blue-500">
+            <button type="button" onClick={() => onLoadMore(nextCursor)} className="text-sm text-primary hover:text-primary/80">
               Load more
             </button>
           </td>
@@ -518,28 +520,32 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
 
   return (
     <tr
-      className="group border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+      className="group border-b border-border cursor-pointer transition-colors hover:bg-muted/30 last:border-0"
       onClick={() => setPreview(target)}
     >
-      <td className="py-2 pr-4 font-medium text-gray-900">{doc.name}</td>
-      <td className="py-2 pr-4 text-xs uppercase text-gray-500">{doc.format}</td>
-      <td className="py-2 pr-4">
+      <td className="px-4 py-3 font-medium text-foreground">{doc.name}</td>
+      <td className="hidden py-3 pr-4 sm:table-cell">
+        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+          {doc.format}
+        </span>
+      </td>
+      <td className="hidden py-3 pr-4 md:table-cell">
         <div className="flex flex-wrap gap-1">
           {doc.tags.map((tag) => (
-            <span key={tag} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+            <span key={tag} className="rounded-md bg-secondary/60 px-1.5 py-0.5 text-xs text-secondary-foreground">
               {tag}
             </span>
           ))}
         </div>
       </td>
-      <td className="py-2 whitespace-nowrap text-gray-500">{formatDate(doc.createdAt)}</td>
-      <td className="py-2 whitespace-nowrap text-right">
-        <div className="flex items-center justify-end gap-2">
+      <td className="hidden py-3 whitespace-nowrap text-sm text-muted-foreground sm:table-cell">{formatDate(doc.createdAt)}</td>
+      <td className="py-3 whitespace-nowrap text-right">
+        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             type="button"
             aria-label={`Rename ${doc.name}`}
             onClick={(e) => { e.stopPropagation(); setRenameDialog(openRenameDialog(doc)); }}
-            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+            className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             Rename
           </button>
@@ -547,7 +553,7 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
             type="button"
             aria-label={`Edit tags and collections for ${doc.name}`}
             onClick={(e) => { e.stopPropagation(); setEditDialog(openEditDocumentDialog(doc)); }}
-            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+            className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             Edit
           </button>
@@ -555,7 +561,7 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
             type="button"
             aria-label={`Watermark preview of ${doc.name}`}
             onClick={openWatermarkPreview}
-            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+            className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             Watermark
           </button>
@@ -563,7 +569,7 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
             type="button"
             aria-label={`Delete ${doc.name}`}
             onClick={(e) => { e.stopPropagation(); setConfirmDelete(doc); }}
-            className="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-700"
+            className="rounded px-2 py-1 text-xs text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             Delete
           </button>
@@ -590,10 +596,10 @@ function SortButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1 ${active ? "text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+      className={`flex items-center gap-1 text-xs font-semibold tracking-wide uppercase transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
     >
       {label}
-      {active && <span className="text-gray-400">{direction === "asc" ? "↑" : "↓"}</span>}
+      {active && <span className="text-primary">{direction === "asc" ? "↑" : "↓"}</span>}
     </button>
   );
 }
@@ -629,14 +635,14 @@ function CreateCollectionDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="create-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="create-col-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">
+    <div role="dialog" aria-modal="true" aria-labelledby="create-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="create-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">
           {state.parentId ? "New sub-collection" : "New collection"}
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="create-col-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="create-col-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
             <input
               id="create-col-name"
               type="text"
@@ -646,7 +652,7 @@ function CreateCollectionDialog() {
               autoFocus
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
               Cancel
@@ -692,12 +698,12 @@ function EditCollectionDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="edit-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="edit-col-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Edit collection</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="edit-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="edit-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">Edit collection</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="edit-col-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="edit-col-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
             <input
               id="edit-col-name"
               type="text"
@@ -708,7 +714,7 @@ function EditCollectionDialog() {
             />
           </div>
           <div>
-            <label htmlFor="edit-col-watermark" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="edit-col-watermark" className="mb-1 block text-sm font-medium text-foreground">
               Watermark text
             </label>
             <input
@@ -720,7 +726,7 @@ function EditCollectionDialog() {
               className="input w-full"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
               Cancel
@@ -762,17 +768,17 @@ function DeleteCollectionConfirmDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="delete-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="delete-col-dialog-title" className="mb-2 text-lg font-semibold text-gray-900">Delete collection</h2>
-        <p className="mb-3 text-sm text-gray-600">
+    <div role="dialog" aria-modal="true" aria-labelledby="delete-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="delete-col-dialog-title" className="mb-2 text-base font-semibold text-foreground">Delete collection</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
           Are you sure you want to delete <strong>{collection.name}</strong>?
         </p>
-        <label className="mb-4 flex items-center gap-2 text-sm text-gray-700">
+        <label className="mb-4 flex items-center gap-2 text-sm text-foreground">
           <input type="checkbox" checked={recursive} onChange={(e) => setRecursive(e.target.checked)} />
           Also delete all sub-collections
         </label>
-        {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={() => setCollection(null)} className="btn btn-secondary" disabled={loading}>
             Cancel
@@ -823,14 +829,14 @@ function MoveCollectionDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="move-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="move-col-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">
+    <div role="dialog" aria-modal="true" aria-labelledby="move-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="move-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">
           Move "{state.collectionName}"
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="move-col-parent" className="mb-1 block text-sm font-medium text-gray-700">New parent</label>
+            <label htmlFor="move-col-parent" className="mb-1 block text-sm font-medium text-foreground">New parent</label>
             <select
               id="move-col-parent"
               value={state.newParentId ?? ""}
@@ -847,7 +853,7 @@ function MoveCollectionDialog() {
               ))}
             </select>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
               Cancel
@@ -889,12 +895,12 @@ function RenameDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="rename-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Rename document</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="rename-dialog-title" className="mb-4 text-base font-semibold text-foreground">Rename document</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="rename-name" className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="rename-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
             <input
               id="rename-name"
               type="text"
@@ -904,7 +910,7 @@ function RenameDialog() {
               autoFocus
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
               Cancel
@@ -979,21 +985,21 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="edit-doc-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="edit-doc-dialog-title" className="mb-4 text-lg font-semibold text-gray-900">Edit document</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="edit-doc-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="edit-doc-dialog-title" className="mb-4 text-base font-semibold text-foreground">Edit document</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="edit-tag-input" className="mb-1 block text-sm font-medium text-gray-700">Tags</label>
+            <label htmlFor="edit-tag-input" className="mb-1 block text-sm font-medium text-foreground">Tags</label>
             {state.selectedTags.length > 0 && (
               <div className="mb-1 flex flex-wrap gap-1">
                 {state.selectedTags.map((tag) => (
-                  <span key={tag} className="flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                  <span key={tag} className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                     {tag}
                     <button
                       type="button"
                       onClick={() => setState(removeEditTag(state, tag))}
-                      className="text-blue-500 hover:text-blue-700"
+                      className="opacity-60 hover:opacity-100"
                       aria-label={`Remove tag ${tag}`}
                     >
                       ×
@@ -1018,7 +1024,7 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
                 placeholder="Add tag and press Enter…"
               />
               {filteredSuggestions.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow-sm">
+                <ul className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-md">
                   {filteredSuggestions.map((t) => (
                     <li key={t.id}>
                       <button
@@ -1027,7 +1033,7 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
                           e.preventDefault();
                           setState(addEditTag(state, t.name));
                         }}
-                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50"
+                        className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted/50 transition-colors"
                       >
                         {t.name}
                       </button>
@@ -1040,8 +1046,8 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
 
           {collections.length > 0 && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Collections</label>
-              <div className="max-h-32 overflow-y-auto rounded border border-gray-200 p-2">
+              <label className="mb-1 block text-sm font-medium text-foreground">Collections</label>
+              <div className="max-h-32 overflow-y-auto rounded-lg border border-border p-2">
                 {collections.map((c) => (
                   <label key={c.id} className="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
                     <input
@@ -1056,7 +1062,7 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setState(null)} className="btn btn-secondary" disabled={loading}>
               Cancel
@@ -1097,13 +1103,13 @@ function DeleteConfirmDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="delete-dialog-title" className="mb-2 text-lg font-semibold text-gray-900">Delete document</h2>
-        <p className="mb-4 text-sm text-gray-600">
+    <div role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="delete-dialog-title" className="mb-2 text-base font-semibold text-foreground">Delete document</h2>
+        <p className="mb-4 text-sm text-muted-foreground">
           Are you sure you want to delete <strong>{doc.name}</strong>? This cannot be undone.
         </p>
-        {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={() => setDoc(null)} className="btn btn-secondary" disabled={loading}>
             Cancel
@@ -1158,17 +1164,17 @@ function ExportDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="flex w-full max-w-lg flex-col gap-4 rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="export-dialog-title" className="text-lg font-semibold text-gray-900">Export documents</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 flex w-full max-w-lg flex-col gap-4 rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="export-dialog-title" className="text-base font-semibold text-foreground">Export documents</h2>
 
         <form onSubmit={handleExport} className="flex flex-col gap-4">
           {/* Format */}
           <div>
-            <p className="mb-1 text-sm font-medium text-gray-700">Format</p>
+            <p className="mb-1 text-sm font-medium text-foreground">Format</p>
             <div className="flex gap-4">
               {(["zip", "tar.gz"] as ExportFormat[]).map((fmt) => (
-                <label key={fmt} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                <label key={fmt} className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
                   <input
                     type="radio"
                     name="format"
@@ -1184,10 +1190,10 @@ function ExportDialog() {
 
           {/* Structure */}
           <div>
-            <p className="mb-1 text-sm font-medium text-gray-700">Structure</p>
+            <p className="mb-1 text-sm font-medium text-foreground">Structure</p>
             <div className="flex gap-4">
               {(["flatten", "preserve"] as ExportStructure[]).map((mode) => (
-                <label key={mode} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                <label key={mode} className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
                   <input
                     type="radio"
                     name="structure"
@@ -1203,8 +1209,8 @@ function ExportDialog() {
 
           {/* Watermark */}
           <div>
-            <label htmlFor="export-watermark" className="mb-1 block text-sm font-medium text-gray-700">
-              Watermark text <span className="font-normal text-gray-400">(optional)</span>
+            <label htmlFor="export-watermark" className="mb-1 block text-sm font-medium text-foreground">
+              Watermark text <span className="font-normal text-muted-foreground">(optional)</span>
             </label>
             <input
               id="export-watermark"
@@ -1219,9 +1225,9 @@ function ExportDialog() {
           {/* Document selection */}
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-foreground">
                 Documents{" "}
-                <span className="font-normal text-gray-400">
+                <span className="font-normal text-muted-foreground">
                   ({state.selectedDocIds.length}/{allDocs.length} selected)
                 </span>
               </p>
@@ -1229,7 +1235,7 @@ function ExportDialog() {
                 <button
                   type="button"
                   onClick={() => setDialogState(selectAllDocs(state, allDocs))}
-                  className="text-xs text-blue-600 hover:text-blue-500"
+                  className="text-xs text-primary hover:text-primary/80"
                   disabled={allSelected}
                 >
                   Select all
@@ -1237,31 +1243,31 @@ function ExportDialog() {
                 <button
                   type="button"
                   onClick={() => setDialogState(deselectAllDocs(state))}
-                  className="text-xs text-gray-400 hover:text-gray-700"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                   disabled={state.selectedDocIds.length === 0}
                 >
                   Deselect all
                 </button>
               </div>
             </div>
-            <div className="max-h-48 overflow-y-auto rounded border border-gray-200">
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
               {allDocs.length === 0 ? (
-                <p className="px-3 py-2 text-sm text-gray-400">No documents available.</p>
+                <p className="px-3 py-2 text-sm text-muted-foreground">No documents available.</p>
               ) : (
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-border">
                   {allDocs.map((doc) => {
                     const checked = state.selectedDocIds.includes(doc.id);
                     return (
                       <li key={doc.id}>
-                        <label className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-gray-50">
+                        <label className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/40">
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => setDialogState(toggleExportDoc(state, doc.id))}
                             className="shrink-0"
                           />
-                          <span className="truncate text-sm text-gray-700">{doc.name}</span>
-                          <span className="ml-auto shrink-0 text-xs uppercase text-gray-400">{doc.format}</span>
+                          <span className="truncate text-sm text-foreground">{doc.name}</span>
+                          <span className="ml-auto shrink-0 text-xs uppercase text-muted-foreground">{doc.format}</span>
                         </label>
                       </li>
                     );
@@ -1271,7 +1277,7 @@ function ExportDialog() {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary" disabled={loading}>
@@ -1309,13 +1315,13 @@ function WatermarkPreviewDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="wm-preview-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="wm-preview-dialog-title" className="mb-1 text-lg font-semibold text-gray-900">Watermark preview</h2>
-        <p className="mb-4 truncate text-sm text-gray-500">{pending.name}</p>
+    <div role="dialog" aria-modal="true" aria-labelledby="wm-preview-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
+        <h2 id="wm-preview-dialog-title" className="mb-1 text-lg font-semibold text-foreground">Watermark preview</h2>
+        <p className="mb-4 truncate text-sm text-muted-foreground">{pending.name}</p>
         <form onSubmit={handleConfirm} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="wm-text" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wm-text" className="mb-1 block text-sm font-medium text-foreground">
               Watermark text
             </label>
             <input
@@ -1363,14 +1369,14 @@ function DocumentPreview() {
       className="fixed inset-0 z-50 flex flex-col bg-black/80"
       onClick={() => setPreview(null)}
     >
-      <div className="flex h-14 shrink-0 items-center justify-between bg-gray-900 px-4">
-        <h2 id="preview-dialog-title" className="truncate text-sm font-medium text-white">
+      <div className="flex h-14 shrink-0 items-center justify-between bg-foreground/95 px-4">
+        <h2 id="preview-dialog-title" className="truncate text-sm font-medium text-background">
           {target.name}
         </h2>
         <button
           type="button"
           onClick={() => setPreview(null)}
-          className="ml-4 shrink-0 rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
+          className="ml-4 shrink-0 rounded p-1 text-background/60 hover:bg-background/10 hover:text-background"
           aria-label="Close preview"
         >
           ✕
@@ -1382,10 +1388,10 @@ function DocumentPreview() {
         onClick={(e) => e.stopPropagation()}
       >
         {isLoading && (
-          <p className="mt-16 text-sm text-gray-400">Loading…</p>
+          <p className="mt-16 text-sm text-background/60">Loading…</p>
         )}
         {error && (
-          <p className="mt-16 text-sm text-red-400">{error}</p>
+          <p className="mt-16 text-sm text-destructive-foreground">{error}</p>
         )}
         {bytes && target.format === "pdf" && <PdfViewer bytes={bytes} />}
         {bytes && (target.format === "jpg" || target.format === "png") && (

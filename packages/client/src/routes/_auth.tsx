@@ -2,7 +2,8 @@ import { STORAGE_SESSION_HEADER } from "@dossier/shared";
 import type { Collection, Tag, TagId } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
-import { createRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, SessionState, type UnlockedSession } from "../session.js";
@@ -34,24 +35,46 @@ export const Route = createRoute({
   component: AppShell,
 });
 
-// --- Shell ---
-
 function AppShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar />
-      <main className="flex flex-1 flex-col overflow-y-auto">
-        <Outlet />
-      </main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Mobile top bar */}
+        <div className="flex h-13 shrink-0 items-center gap-3 border-b border-border bg-card px-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+          <span className="text-sm font-semibold text-foreground">Dossier</span>
+        </div>
+        <main className="flex flex-1 flex-col overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
 
-function Sidebar() {
+function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const session = useAtomValue(sessionAtom);
   const navigate = useNavigate();
   const logout = useAtomSet(logoutAtom, { mode: "promiseExit" });
   const setSession = useAtomSet(sessionAtom);
+  const routerState = useRouterState();
+  const isSettings = routerState.location.pathname === "/settings";
 
   async function handleLogout() {
     await logout();
@@ -60,29 +83,57 @@ function Sidebar() {
   }
 
   return (
-    <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
-      <div className="flex h-14 items-center border-b border-gray-200 px-4">
-        <span className="text-base font-semibold text-gray-900">Dossier</span>
+    <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 md:static md:w-56 md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+      {/* Logo */}
+      <div className="flex h-13 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">
+          D
+        </div>
+        <span className="text-sm font-semibold text-sidebar-foreground">Dossier</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto rounded p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden"
+          aria-label="Close menu"
+        >
+          ✕
+        </button>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
-        {session._tag === "Unlocked" && <CollectionTree session={session} />}
-        {session._tag === "Unlocked" && <TagFilter session={session} />}
+
+      {/* Nav */}
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+        {session._tag === "Unlocked" && (
+          <>
+            <CollectionTree session={session} />
+            <TagFilter session={session} />
+          </>
+        )}
       </nav>
-      <div className="border-t border-gray-200 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-sm font-medium text-gray-700">
+
+      {/* Footer */}
+      <div className="shrink-0 border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground text-xs font-semibold">
+            {session._tag === "Unlocked" ? session.username.charAt(0).toUpperCase() : "?"}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-xs font-medium text-sidebar-foreground">
             {session._tag === "Unlocked" ? session.username : ""}
           </span>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link to="/settings" className="text-xs text-gray-400 hover:text-gray-700">
-              Settings
+          <div className="flex shrink-0 items-center gap-1">
+            <Link
+              to="/settings"
+              className={`rounded p-1.5 text-xs transition-colors ${isSettings ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}`}
+              title="Settings"
+            >
+              ⚙
             </Link>
             <button
               type="button"
               onClick={handleLogout}
-              className="text-xs text-gray-400 hover:text-gray-700"
+              className="rounded p-1.5 text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              title="Sign out"
             >
-              Sign out
+              ↩
             </button>
           </div>
         </div>
@@ -93,9 +144,9 @@ function Sidebar() {
 
 function SidebarSection({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <section>
-      <div className="flex items-center justify-between px-2 py-1">
-        <h2 className="text-xs font-medium tracking-wide text-gray-400 uppercase">{title}</h2>
+    <section className="flex flex-col gap-1">
+      <div className="flex items-center justify-between px-2 py-0.5">
+        <h2 className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">{title}</h2>
         {action}
       </div>
       {children}
@@ -124,18 +175,22 @@ function CollectionTree({ session }: { session: UnlockedSession }) {
           type="button"
           aria-label="New collection"
           onClick={() => setCreateDialog(openCreateCollectionDialog(null))}
-          className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           +
         </button>
       }
     >
-      <ul>
+      <ul className="flex flex-col gap-0.5">
         <li>
           <button
             type="button"
             onClick={() => setSelectedCollection(null)}
-            className={`w-full rounded px-2 py-1 text-left text-xs ${selectedCollection === null ? "font-medium text-blue-700 bg-blue-50" : "text-gray-600 hover:bg-gray-100"}`}
+            className={`w-full rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors ${
+              selectedCollection === null
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+            }`}
           >
             All documents
           </button>
@@ -162,51 +217,35 @@ function CollectionTreeItem({ node, depth }: { node: CollectionNode; depth: numb
   return (
     <li>
       <div
-        className={`group flex items-center gap-0.5 rounded ${isSelected ? "bg-blue-50" : "hover:bg-gray-100"}`}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        className={`group flex items-center rounded-md transition-colors ${isSelected ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60"}`}
+        style={{ paddingLeft: `${depth * 10 + 8}px` }}
       >
         <button
           type="button"
           onClick={() => setSelected(collection.id)}
-          className={`flex-1 truncate py-1 text-left text-xs ${isSelected ? "font-medium text-blue-700" : "text-gray-700"}`}
+          className={`flex-1 truncate py-1.5 pr-1 text-left text-xs font-medium transition-colors ${
+            isSelected ? "text-sidebar-accent-foreground" : "text-sidebar-foreground"
+          }`}
         >
           {collection.name}
         </button>
-        <button
-          type="button"
-          aria-label={`Create child collection in ${collection.name}`}
-          onClick={() => setCreateDialog(openCreateCollectionDialog(collection.id))}
-          className="shrink-0 rounded px-0.5 text-gray-400 hover:text-gray-700"
-        >
-          +
-        </button>
-        <button
-          type="button"
-          aria-label={`Edit collection ${collection.name}`}
-          onClick={() => setEditDialog(openEditCollectionDialog(collection))}
-          className="shrink-0 rounded px-0.5 text-gray-400 hover:text-gray-700"
-        >
-          ✎
-        </button>
-        <button
-          type="button"
-          aria-label={`Move collection ${collection.name}`}
-          onClick={() => setMoveDialog(openMoveCollectionDialog(collection))}
-          className="shrink-0 rounded px-0.5 text-gray-400 hover:text-gray-700"
-        >
-          ↕
-        </button>
-        <button
-          type="button"
-          aria-label={`Delete collection ${collection.name}`}
-          onClick={() => setDeleteDialog(collection)}
-          className="shrink-0 rounded px-0.5 text-red-400 hover:text-red-700"
-        >
-          ×
-        </button>
+        <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+          <button type="button" aria-label={`Create child collection in ${collection.name}`}
+            onClick={() => setCreateDialog(openCreateCollectionDialog(collection.id))}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground">+</button>
+          <button type="button" aria-label={`Edit collection ${collection.name}`}
+            onClick={() => setEditDialog(openEditCollectionDialog(collection))}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground">✎</button>
+          <button type="button" aria-label={`Move collection ${collection.name}`}
+            onClick={() => setMoveDialog(openMoveCollectionDialog(collection))}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground">↕</button>
+          <button type="button" aria-label={`Delete collection ${collection.name}`}
+            onClick={() => setDeleteDialog(collection)}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-destructive">×</button>
+        </div>
       </div>
       {children.length > 0 && (
-        <ul>
+        <ul className="flex flex-col gap-0.5">
           {children.map((child) => (
             <CollectionTreeItem key={child.collection.id} node={child} depth={depth + 1} />
           ))}
@@ -215,8 +254,6 @@ function CollectionTreeItem({ node, depth }: { node: CollectionNode; depth: numb
     </li>
   );
 }
-
-// --- Tag filter ---
 
 function TagFilter({ session }: { session: UnlockedSession }) {
   const tagsQueryAtom = StorageRpc.query("ListTags", undefined, {
@@ -232,9 +269,9 @@ function TagFilter({ session }: { session: UnlockedSession }) {
   return (
     <SidebarSection title="Tags">
       {tags.length === 0 ? (
-        <p className="px-2 py-1 text-xs text-gray-400">No tags yet.</p>
+        <p className="px-2 py-1 text-xs text-muted-foreground">No tags yet.</p>
       ) : (
-        <ul>
+        <ul className="flex flex-col gap-0.5">
           {tags.map((tag) => {
             const active = selectedTags.includes(tag.id as TagId);
             return (
@@ -242,10 +279,14 @@ function TagFilter({ session }: { session: UnlockedSession }) {
                 <button
                   type="button"
                   onClick={() => setSelectedTags(toggleTag(selectedTags, tag.id as TagId))}
-                  className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs ${active ? "font-medium text-blue-700 bg-blue-50" : "text-gray-600 hover:bg-gray-100"}`}
+                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors ${
+                    active
+                      ? "bg-primary/15 text-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                  }`}
                 >
                   <span className="truncate">{tag.name}</span>
-                  <span className={`ml-1 shrink-0 tabular-nums ${active ? "text-blue-500" : "text-gray-400"}`}>
+                  <span className={`ml-1 shrink-0 tabular-nums text-[10px] ${active ? "text-primary/70" : "text-muted-foreground"}`}>
                     {tag.documentCount}
                   </span>
                 </button>

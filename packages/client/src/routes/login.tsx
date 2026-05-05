@@ -19,15 +19,16 @@ export const Route = createRoute({
   component: LoginPage,
 });
 
-// --- Component ---
-
 function LoginPage() {
   const session = useAtomValue(sessionAtom);
-  if (session._tag === "Locked") return <UnlockForm session={session} />;
-  return <LoginForm />;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm rounded-xl bg-card p-8 shadow-lg ring-1 ring-border">
+        {session._tag === "Locked" ? <UnlockForm session={session} /> : <LoginForm />}
+      </div>
+    </div>
+  );
 }
-
-// --- Login form ---
 
 function LoginForm() {
   const [username, setUsername] = useState("");
@@ -54,57 +55,41 @@ function LoginForm() {
 
   return (
     <>
-      <h1 className="mb-6 text-xl font-semibold text-gray-900">Sign in to Dossier</h1>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-foreground">Sign in to Dossier</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Enter your credentials to access your vault.</p>
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Username">
-          <input
-            type="text"
-            autoComplete="username"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="input"
-          />
+          <input type="text" autoComplete="username" required value={username}
+            onChange={(e) => setUsername(e.target.value)} className="input" />
         </Field>
         <Field label="Password">
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input"
-          />
+          <input type="password" autoComplete="current-password" required value={password}
+            onChange={(e) => setPassword(e.target.value)} className="input" />
         </Field>
         <Field label="Authenticator code">
           <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            autoComplete="one-time-code"
-            required
-            value={totpCode}
+            type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6}
+            autoComplete="one-time-code" required value={totpCode}
             onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
             className="input text-center tracking-widest"
           />
         </Field>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={isWaiting || totpCode.length !== 6} className="btn-primary">
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <button type="submit" disabled={isWaiting || totpCode.length !== 6} className="btn-primary w-full">
           {isWaiting ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-500">
+      <p className="mt-5 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
-        <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+        <Link to="/register" className="font-medium text-primary hover:text-primary/80">
           Create one
         </Link>
       </p>
     </>
   );
 }
-
-// --- Unlock form ---
 
 function UnlockForm({ session }: { session: LockedSession }) {
   const [password, setPassword] = useState("");
@@ -129,31 +114,24 @@ function UnlockForm({ session }: { session: LockedSession }) {
 
   return (
     <>
-      <h1 className="mb-2 text-xl font-semibold text-gray-900">Welcome back, {session.username}</h1>
-      <p className="mb-6 text-sm text-gray-500">Enter your password to unlock your vault.</p>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-foreground">Welcome back, {session.username}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Enter your password to unlock your vault.</p>
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Password">
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input"
-          />
+          <input type="password" autoComplete="current-password" required value={password}
+            onChange={(e) => setPassword(e.target.value)} className="input" />
         </Field>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={isWaiting} className="btn-primary">
-          {isWaiting ? "Unlocking…" : "Unlock"}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <button type="submit" disabled={isWaiting} className="btn-primary w-full">
+          {isWaiting ? "Unlocking…" : "Unlock vault"}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-500">
+      <p className="mt-5 text-center text-sm text-muted-foreground">
         Not {session.username}?{" "}
-        <button
-          type="button"
-          onClick={() => setSession(SessionState.LoggedOut())}
-          className="font-medium text-blue-600 hover:text-blue-500"
-        >
+        <button type="button" onClick={() => setSession(SessionState.LoggedOut())}
+          className="font-medium text-primary hover:text-primary/80">
           Sign out
         </button>
       </p>
@@ -161,12 +139,10 @@ function UnlockForm({ session }: { session: LockedSession }) {
   );
 }
 
-// --- Shared UI primitives ---
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-foreground">{label}</span>
       {children}
     </label>
   );
