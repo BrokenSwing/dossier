@@ -10,7 +10,7 @@ import React from "react";
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, type UnlockedSession } from "../session.js";
 import { Route as authRoute } from "./_auth.js";
-import { previewAtom, previewDataAtom, type PreviewTarget } from "./_auth.index.preview.js";
+import { previewAtom, previewDataAtom, watermarkPreviewPendingAtom, type PreviewTarget, type WatermarkPreviewPending } from "./_auth.index.preview.js";
 import {
   addEditTag,
   confirmDeleteAtom,
@@ -229,6 +229,7 @@ function DocumentsPage() {
 
       <UploadDialog session={session} />
       <ExportDialog />
+      <WatermarkPreviewDialog />
       <DocumentPreview />
       <RenameDialog />
       <EditDocumentDialog session={session} />
@@ -496,7 +497,24 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
   const setRenameDialog = useAtomSet(renameDialogAtom);
   const setEditDialog = useAtomSet(editDocumentDialogAtom);
   const setConfirmDelete = useAtomSet(confirmDeleteAtom);
+  const setWatermarkPending = useAtomSet(watermarkPreviewPendingAtom);
+  const session = useAtomValue(sessionAtom) as UnlockedSession;
   const target: PreviewTarget = { documentId: doc.id, format: doc.format, name: doc.name };
+
+  const collectionsQueryAtom = StorageRpc.query("ListCollections", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+    reactivityKeys: { collections: [] },
+  });
+  const collectionsResult = useAtomValue(collectionsQueryAtom);
+  const collections: ReadonlyArray<Collection> = Result.isSuccess(collectionsResult) ? collectionsResult.value : [];
+
+  function openWatermarkPreview(e: React.MouseEvent) {
+    e.stopPropagation();
+    const collectionWatermark = doc.collectionIds
+      .map((cid) => collections.find((c) => c.id === cid)?.watermark?.text)
+      .find((t) => t !== undefined) ?? "";
+    setWatermarkPending({ documentId: doc.id, format: doc.format, name: doc.name, watermarkText: collectionWatermark });
+  }
 
   return (
     <tr
@@ -532,6 +550,14 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
             className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
           >
             Edit
+          </button>
+          <button
+            type="button"
+            aria-label={`Watermark preview of ${doc.name}`}
+            onClick={openWatermarkPreview}
+            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+          >
+            Watermark
           </button>
           <button
             type="button"
@@ -1253,6 +1279,61 @@ function ExportDialog() {
             </button>
             <button type="submit" disabled={state.selectedDocIds.length === 0 || loading} className="btn btn-primary">
               {loading ? "Exporting…" : `Export ${state.selectedDocIds.length} document${state.selectedDocIds.length !== 1 ? "s" : ""}`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- Watermark preview dialog ---
+
+function WatermarkPreviewDialog() {
+  const pending = useAtomValue(watermarkPreviewPendingAtom);
+  const setPending = useAtomSet(watermarkPreviewPendingAtom);
+  const setPreview = useAtomSet(previewAtom);
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (pending) setText(pending.watermarkText);
+  }, [pending]);
+
+  if (!pending) return null;
+
+  function handleConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pending) return;
+    setPreview({ documentId: pending.documentId, format: pending.format, name: pending.name, watermarkText: text });
+    setPending(null);
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="wm-preview-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="wm-preview-dialog-title" className="mb-1 text-lg font-semibold text-gray-900">Watermark preview</h2>
+        <p className="mb-4 truncate text-sm text-gray-500">{pending.name}</p>
+        <form onSubmit={handleConfirm} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="wm-text" className="mb-1 block text-sm font-medium text-gray-700">
+              Watermark text
+            </label>
+            <input
+              id="wm-text"
+              type="text"
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="e.g. CONFIDENTIAL"
+              className="input w-full"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setPending(null)} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" disabled={!text.trim()} className="btn btn-primary">
+              Preview
             </button>
           </div>
         </form>

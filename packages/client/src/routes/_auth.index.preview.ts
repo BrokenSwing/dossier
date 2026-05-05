@@ -12,6 +12,7 @@ export interface PreviewTarget {
   readonly documentId: DocumentId;
   readonly format: DocumentFormat;
   readonly name: string;
+  readonly watermarkText?: string;
 }
 
 export const previewAtom = Atom.writable<PreviewTarget | null, PreviewTarget | null>(
@@ -25,11 +26,12 @@ export const previewDataAtom = ComputeRpc.runtime.atom((get) => {
   const session = get(sessionAtom) as UnlockedSession;
   return Effect.gen(function* () {
     const client = yield* ComputeRpc;
-    const stream = client(
-      "Preview",
-      { dek: bytesToBase64Url(session.dek), documentId: target.documentId },
-      { headers: { [COMPUTE_SESSION_HEADER]: session.token } },
-    );
+    const dek = bytesToBase64Url(session.dek);
+    const headers = { headers: { [COMPUTE_SESSION_HEADER]: session.token } };
+    const stream =
+      target.watermarkText !== undefined
+        ? client("WatermarkPreview", { dek, documentId: target.documentId, watermarkText: target.watermarkText }, headers)
+        : client("Preview", { dek, documentId: target.documentId }, headers);
     return (yield* Stream.runFold(stream, new Uint8Array(0), (acc, chunk) => {
       const next = new Uint8Array(acc.length + chunk.length);
       next.set(acc, 0);
@@ -38,3 +40,16 @@ export const previewDataAtom = ComputeRpc.runtime.atom((get) => {
     })) as Uint8Array | null;
   });
 }).pipe(Atom.keepAlive);
+
+// Pending watermark preview: holds the doc to preview + default text before user confirms
+export interface WatermarkPreviewPending {
+  readonly documentId: DocumentId;
+  readonly format: DocumentFormat;
+  readonly name: string;
+  readonly watermarkText: string;
+}
+
+export const watermarkPreviewPendingAtom = Atom.writable<WatermarkPreviewPending | null, WatermarkPreviewPending | null>(
+  () => null,
+  (ctx, v) => ctx.setSelf(v),
+).pipe(Atom.keepAlive);
