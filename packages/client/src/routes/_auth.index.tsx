@@ -1,5 +1,5 @@
 import { STORAGE_SESSION_HEADER } from "@dossier/shared";
-import type { Collection, CollectionId, DocumentMeta, Tag, TagId } from "@dossier/shared";
+import type { Collection, CollectionId, DocumentMeta, ExportFormat, ExportStructure, Tag, TagId } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute } from "@tanstack/react-router";
@@ -51,6 +51,19 @@ import {
   type MoveCollectionDialogState,
 } from "./_auth.index.collections.js";
 import { clearTags, selectedTagsAtom, toggleTag } from "./_auth.index.tags.js";
+import {
+  deselectAllDocs,
+  exportAtom,
+  exportDialogAtom,
+  exportOpenAtom,
+  openExportDialog,
+  selectAllDocs,
+  setExportFormat,
+  setExportStructureMode,
+  setExportWatermarkText,
+  toggleExportDoc,
+  type ExportDialogState,
+} from "./_auth.index.export.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
 import {
@@ -92,6 +105,8 @@ function DocumentsPage() {
   const selectedCollection = useAtomValue(selectedCollectionAtom);
   const selectedTags = useAtomValue(selectedTagsAtom);
   const setSelectedTags = useAtomSet(selectedTagsAtom);
+  const setExportOpen = useAtomSet(exportOpenAtom);
+  const setExportDialog = useAtomSet(exportDialogAtom);
 
   const tagsQueryAtom = StorageRpc.query("ListTags", undefined, {
     headers: { [STORAGE_SESSION_HEADER]: session.token },
@@ -102,6 +117,27 @@ function DocumentsPage() {
   const activeTagNames = selectedTags.map((id) => allTags.find((t) => t.id === id)?.name ?? id);
 
   const tagFilter: ReadonlyArray<TagId> | undefined = selectedTags.length > 0 ? selectedTags : undefined;
+
+  // Load first page of docs with current filters so export dialog can pre-select them
+  const exportDocsQueryAtom = StorageRpc.query(
+    "ListDocuments",
+    {
+      sortField: state.sortField,
+      sortDirection: state.sortDirection,
+      nameFilter: state.nameFilter || undefined,
+      collectionFilter: selectedCollection ?? undefined,
+      tagFilter,
+      limit: 200,
+    },
+    { headers: { [STORAGE_SESSION_HEADER]: session.token }, reactivityKeys: { documents: [] } },
+  );
+  const exportDocsResult = useAtomValue(exportDocsQueryAtom);
+  const visibleDocs: ReadonlyArray<DocumentMeta> = Result.isSuccess(exportDocsResult) ? exportDocsResult.value.documents : [];
+
+  function openExport() {
+    setExportDialog(openExportDialog(visibleDocs));
+    setExportOpen(true);
+  }
 
   return (
     <div className="flex flex-col gap-4 p-6">
@@ -114,9 +150,14 @@ function DocumentsPage() {
           onChange={(e) => setState(setNameFilter(state, e.target.value))}
           className="input w-full max-w-sm"
         />
-        <button type="button" onClick={() => setUploadOpen(true)} className="ml-auto shrink-0 btn btn-primary">
-          Upload
-        </button>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <button type="button" onClick={openExport} className="btn btn-secondary">
+            Export
+          </button>
+          <button type="button" onClick={() => setUploadOpen(true)} className="btn btn-primary">
+            Upload
+          </button>
+        </div>
       </div>
 
       {selectedTags.length > 0 && (
@@ -187,6 +228,7 @@ function DocumentsPage() {
       </table>
 
       <UploadDialog session={session} />
+      <ExportDialog />
       <DocumentPreview />
       <RenameDialog />
       <EditDocumentDialog session={session} />
@@ -1044,6 +1086,176 @@ function DeleteConfirmDialog() {
             {loading ? "Deleting…" : "Delete"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Export dialog ---
+
+function ExportDialog() {
+  const open = useAtomValue(exportOpenAtom);
+  const setOpen = useAtomSet(exportOpenAtom);
+  const dialogState = useAtomValue(exportDialogAtom);
+  const setDialogState = useAtomSet(exportDialogAtom);
+  const doExport = useAtomSet(exportAtom, { mode: "promiseExit" });
+  const session = useAtomValue(sessionAtom) as UnlockedSession;
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const allDocsQueryAtom = StorageRpc.query(
+    "ListDocuments",
+    { limit: 200 },
+    { headers: { [STORAGE_SESSION_HEADER]: session.token }, reactivityKeys: { documents: [] } },
+  );
+  const allDocsResult = useAtomValue(allDocsQueryAtom);
+  const allDocs: ReadonlyArray<DocumentMeta> = Result.isSuccess(allDocsResult) ? allDocsResult.value.documents : [];
+
+  if (!open) return null;
+
+  const state = dialogState;
+  const allSelected = allDocs.length > 0 && allDocs.every((d) => state.selectedDocIds.includes(d.id));
+
+  async function handleExport(e: React.FormEvent) {
+    e.preventDefault();
+    if (state.selectedDocIds.length === 0) return;
+    setLoading(true);
+    setError(null);
+    const exit = await doExport({ state, docs: allDocs });
+    setLoading(false);
+    if (exit._tag === "Success") {
+      setOpen(false);
+    } else {
+      const cause = exit.cause;
+      setError(cause._tag === "Fail" ? String((cause.error as { message?: unknown }).message ?? cause.error) : "Export failed. Please try again.");
+    }
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="flex w-full max-w-lg flex-col gap-4 rounded-lg bg-white p-6 shadow-xl">
+        <h2 id="export-dialog-title" className="text-lg font-semibold text-gray-900">Export documents</h2>
+
+        <form onSubmit={handleExport} className="flex flex-col gap-4">
+          {/* Format */}
+          <div>
+            <p className="mb-1 text-sm font-medium text-gray-700">Format</p>
+            <div className="flex gap-4">
+              {(["zip", "tar.gz"] as ExportFormat[]).map((fmt) => (
+                <label key={fmt} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    name="format"
+                    value={fmt}
+                    checked={state.format === fmt}
+                    onChange={() => setDialogState(setExportFormat(state, fmt))}
+                  />
+                  {fmt}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Structure */}
+          <div>
+            <p className="mb-1 text-sm font-medium text-gray-700">Structure</p>
+            <div className="flex gap-4">
+              {(["flatten", "preserve"] as ExportStructure[]).map((mode) => (
+                <label key={mode} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    name="structure"
+                    value={mode}
+                    checked={state.structureMode === mode}
+                    onChange={() => setDialogState(setExportStructureMode(state, mode))}
+                  />
+                  {mode === "flatten" ? "Flat (all files in root)" : "Preserve collection structure"}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Watermark */}
+          <div>
+            <label htmlFor="export-watermark" className="mb-1 block text-sm font-medium text-gray-700">
+              Watermark text <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              id="export-watermark"
+              type="text"
+              value={state.watermarkText}
+              onChange={(e) => setDialogState(setExportWatermarkText(state, e.target.value))}
+              placeholder="Watermark to apply to all exported documents"
+              className="input w-full"
+            />
+          </div>
+
+          {/* Document selection */}
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700">
+                Documents{" "}
+                <span className="font-normal text-gray-400">
+                  ({state.selectedDocIds.length}/{allDocs.length} selected)
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDialogState(selectAllDocs(state, allDocs))}
+                  className="text-xs text-blue-600 hover:text-blue-500"
+                  disabled={allSelected}
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDialogState(deselectAllDocs(state))}
+                  className="text-xs text-gray-400 hover:text-gray-700"
+                  disabled={state.selectedDocIds.length === 0}
+                >
+                  Deselect all
+                </button>
+              </div>
+            </div>
+            <div className="max-h-48 overflow-y-auto rounded border border-gray-200">
+              {allDocs.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-gray-400">No documents available.</p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {allDocs.map((doc) => {
+                    const checked = state.selectedDocIds.includes(doc.id);
+                    return (
+                      <li key={doc.id}>
+                        <label className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => setDialogState(toggleExportDoc(state, doc.id))}
+                            className="shrink-0"
+                          />
+                          <span className="truncate text-sm text-gray-700">{doc.name}</span>
+                          <span className="ml-auto shrink-0 text-xs uppercase text-gray-400">{doc.format}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" disabled={state.selectedDocIds.length === 0 || loading} className="btn btn-primary">
+              {loading ? "Exporting…" : `Export ${state.selectedDocIds.length} document${state.selectedDocIds.length !== 1 ? "s" : ""}`}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
