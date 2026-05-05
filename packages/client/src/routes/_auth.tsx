@@ -2,7 +2,7 @@ import { STORAGE_SESSION_HEADER } from "@dossier/shared";
 import type { Collection, Tag, TagId } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
-import { createRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, SessionState, type UnlockedSession } from "../session.js";
@@ -73,13 +73,18 @@ function Sidebar() {
           <span className="truncate text-sm font-medium text-gray-700">
             {session._tag === "Unlocked" ? session.username : ""}
           </span>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="shrink-0 text-xs text-gray-400 hover:text-gray-700"
-          >
-            Sign out
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link to="/settings" className="text-xs text-gray-400 hover:text-gray-700">
+              Settings
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-xs text-gray-400 hover:text-gray-700"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
     </aside>
