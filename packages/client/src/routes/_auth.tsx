@@ -1,5 +1,5 @@
 import { STORAGE_SESSION_HEADER } from "@dossier/shared";
-import type { Collection } from "@dossier/shared";
+import type { Collection, Tag, TagId } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
@@ -19,6 +19,7 @@ import {
   selectedCollectionAtom,
   type CollectionNode,
 } from "./_auth.index.collections.js";
+import { selectedTagsAtom, toggleTag } from "./_auth.index.tags.js";
 import { logoutAtom } from "./_auth.logout.js";
 
 export const Route = createRoute({
@@ -65,9 +66,7 @@ function Sidebar() {
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
         {session._tag === "Unlocked" && <CollectionTree session={session} />}
-        <SidebarSection title="Tags">
-          <p className="px-2 py-1 text-xs text-gray-400">No tags yet.</p>
-        </SidebarSection>
+        {session._tag === "Unlocked" && <TagFilter session={session} />}
       </nav>
       <div className="border-t border-gray-200 p-3">
         <div className="flex items-center justify-between gap-2">
@@ -209,5 +208,47 @@ function CollectionTreeItem({ node, depth }: { node: CollectionNode; depth: numb
         </ul>
       )}
     </li>
+  );
+}
+
+// --- Tag filter ---
+
+function TagFilter({ session }: { session: UnlockedSession }) {
+  const tagsQueryAtom = StorageRpc.query("ListTags", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+    reactivityKeys: { documents: [] },
+  });
+  const result = useAtomValue(tagsQueryAtom);
+  const selectedTags = useAtomValue(selectedTagsAtom);
+  const setSelectedTags = useAtomSet(selectedTagsAtom);
+
+  const tags: ReadonlyArray<Tag> = Result.isSuccess(result) ? result.value : [];
+
+  return (
+    <SidebarSection title="Tags">
+      {tags.length === 0 ? (
+        <p className="px-2 py-1 text-xs text-gray-400">No tags yet.</p>
+      ) : (
+        <ul>
+          {tags.map((tag) => {
+            const active = selectedTags.includes(tag.id as TagId);
+            return (
+              <li key={tag.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTags(toggleTag(selectedTags, tag.id as TagId))}
+                  className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs ${active ? "font-medium text-blue-700 bg-blue-50" : "text-gray-600 hover:bg-gray-100"}`}
+                >
+                  <span className="truncate">{tag.name}</span>
+                  <span className={`ml-1 shrink-0 tabular-nums ${active ? "text-blue-500" : "text-gray-400"}`}>
+                    {tag.documentCount}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </SidebarSection>
   );
 }

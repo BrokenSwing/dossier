@@ -1,5 +1,5 @@
 import { STORAGE_SESSION_HEADER } from "@dossier/shared";
-import type { Collection, CollectionId, DocumentMeta, Tag } from "@dossier/shared";
+import type { Collection, CollectionId, DocumentMeta, Tag, TagId } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute } from "@tanstack/react-router";
@@ -50,6 +50,7 @@ import {
   type EditCollectionDialogState,
   type MoveCollectionDialogState,
 } from "./_auth.index.collections.js";
+import { clearTags, selectedTagsAtom, toggleTag } from "./_auth.index.tags.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
 import {
@@ -89,6 +90,18 @@ function DocumentsPage() {
   const setState = useAtomSet(docListAtom);
   const setUploadOpen = useAtomSet(uploadOpenAtom);
   const selectedCollection = useAtomValue(selectedCollectionAtom);
+  const selectedTags = useAtomValue(selectedTagsAtom);
+  const setSelectedTags = useAtomSet(selectedTagsAtom);
+
+  const tagsQueryAtom = StorageRpc.query("ListTags", undefined, {
+    headers: { [STORAGE_SESSION_HEADER]: session.token },
+    reactivityKeys: { documents: [] },
+  });
+  const tagsResult = useAtomValue(tagsQueryAtom);
+  const allTags: ReadonlyArray<Tag> = Result.isSuccess(tagsResult) ? tagsResult.value : [];
+  const activeTagNames = selectedTags.map((id) => allTags.find((t) => t.id === id)?.name ?? id);
+
+  const tagFilter: ReadonlyArray<TagId> | undefined = selectedTags.length > 0 ? selectedTags : undefined;
 
   return (
     <div className="flex flex-col gap-4 p-6">
@@ -105,6 +118,31 @@ function DocumentsPage() {
           Upload
         </button>
       </div>
+
+      {selectedTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-gray-500">Filtered by tags:</span>
+          {selectedTags.map((id, i) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setSelectedTags(toggleTag(selectedTags, id))}
+              aria-label={`Remove tag filter ${activeTagNames[i]}`}
+              className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200"
+            >
+              {activeTagNames[i]}
+              <span aria-hidden="true">×</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setSelectedTags(clearTags(selectedTags))}
+            className="text-xs text-gray-400 hover:text-gray-700"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       <table className="w-full text-sm">
         <thead>
@@ -138,6 +176,7 @@ function DocumentsPage() {
               sortDirection={state.sortDirection}
               nameFilter={state.nameFilter || undefined}
               collectionFilter={selectedCollection ?? undefined}
+              tagFilter={tagFilter}
               cursor={cursor}
               token={session.token}
               isLastPage={i === state.cursors.length - 1}
@@ -342,16 +381,17 @@ interface PageRowsProps {
   readonly sortDirection: SortDirection;
   readonly nameFilter: string | undefined;
   readonly collectionFilter: CollectionId | undefined;
+  readonly tagFilter: ReadonlyArray<TagId> | undefined;
   readonly cursor: string | undefined;
   readonly token: string;
   readonly isLastPage: boolean;
   readonly onLoadMore: (nextCursor: string) => void;
 }
 
-function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilter, cursor, token, isLastPage, onLoadMore }: PageRowsProps) {
+function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilter, tagFilter, cursor, token, isLastPage, onLoadMore }: PageRowsProps) {
   const queryAtom = StorageRpc.query(
     "ListDocuments",
-    { sortField, sortDirection, nameFilter, collectionFilter, cursor, limit: 20 },
+    { sortField, sortDirection, nameFilter, collectionFilter, tagFilter, cursor, limit: 20 },
     { headers: { [STORAGE_SESSION_HEADER]: token }, reactivityKeys: { documents: [] } },
   );
 
