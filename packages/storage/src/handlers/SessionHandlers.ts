@@ -4,6 +4,8 @@ import * as Effect from "effect/Effect";
 import jwt from "jsonwebtoken";
 
 export const sessionHandlers = StorageSessionRpcs.toLayer({
+  ValidateSession: () => Effect.void,
+
   // The handler receives (payload, options) where options.headers has the request headers.
   // The middleware already verified the token; just decode to get the jti.
   Logout: (_payload, { headers }) =>

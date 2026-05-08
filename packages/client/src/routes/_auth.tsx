@@ -3,11 +3,12 @@ import type { Collection, Tag, TagId } from "@dossier/shared";
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
 import * as Result from "@effect-atom/atom/Result";
 import { createRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { StorageRpc } from "../lib/rpc.js";
-import { sessionAtom, SessionState, type UnlockedSession } from "../session.js";
+import { isTokenExpired, sessionAtom, SessionState, type UnlockedSession } from "../session.js";
 import { Route as rootRoute } from "./__root.js";
+import { initialUploadFormState, setFile, uploadFormAtom, uploadOpenAtom } from "./_auth.index.upload.js";
 import {
   buildTree,
   confirmDeleteCollectionAtom,
@@ -37,6 +38,46 @@ export const Route = createRoute({
 
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const setUploadOpen = useAtomSet(uploadOpenAtom);
+  const setUploadForm = useAtomSet(uploadFormAtom);
+  const session = useAtomValue(sessionAtom);
+  const setSession = useAtomSet(sessionAtom);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    function checkExpiry() {
+      if (session._tag === "Unlocked" && isTokenExpired(session.token)) {
+        setSession(SessionState.LoggedOut());
+        void navigate({ to: "/login" });
+      }
+    }
+    document.addEventListener("visibilitychange", checkExpiry);
+    return () => document.removeEventListener("visibilitychange", checkExpiry);
+  }, [session, setSession, navigate]);
+
+  function handleDragOver(e: React.DragEvent) {
+    if (e.dataTransfer.types.includes("Files")) {
+      e.preventDefault();
+      setIsDragging(true);
+    }
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    setUploadForm(setFile(initialUploadFormState, file));
+    setUploadOpen(true);
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile overlay */}
@@ -60,8 +101,21 @@ function AppShell() {
           </button>
           <span className="text-sm font-semibold text-foreground">Dossier</span>
         </div>
-        <main className="flex flex-1 flex-col overflow-y-auto">
+        <main
+          className="relative flex flex-1 flex-col overflow-y-auto"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <Outlet />
+          {isDragging && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-primary bg-primary/5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">
+                ↑
+              </div>
+              <p className="text-sm font-medium text-primary">Drop to upload the document</p>
+            </div>
+          )}
         </main>
       </div>
     </div>

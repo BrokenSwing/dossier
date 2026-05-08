@@ -29,6 +29,17 @@ export type LoggedOut = Data.TaggedEnum.Value<SessionState, "LoggedOut">;
 export type LockedSession = Data.TaggedEnum.Value<SessionState, "Locked">;
 export type UnlockedSession = Data.TaggedEnum.Value<SessionState, "Unlocked">;
 
+// --- JWT expiry check (client-side decode, no signature verification) ---
+
+export function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
+    return typeof payload.exp === "number" && Date.now() / 1000 >= payload.exp;
+  } catch {
+    return false;
+  }
+}
+
 // --- localStorage persistence ---
 
 const STORAGE_KEY = "dossier-session";
@@ -50,6 +61,10 @@ function loadFromStorage(): SessionState {
     if (!raw) return SessionState.LoggedOut();
     const decoded = decodeSession(raw);
     if (decoded._tag === "None") return SessionState.LoggedOut();
+    if (isTokenExpired(decoded.value.token)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return SessionState.LoggedOut();
+    }
     return SessionState.Locked(decoded.value);
   } catch {
     return SessionState.LoggedOut();

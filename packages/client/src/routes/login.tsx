@@ -109,6 +109,11 @@ function UnlockForm({ session }: { session: LockedSession }) {
     if (exit._tag === "Success") {
       setSession(exit.value);
       void navigate({ to: "/" });
+    } else {
+      const cause = exit.cause;
+      if (cause._tag === "Fail" && (cause.error as { _tag?: string })._tag === "InvalidSessionError") {
+        setSession(SessionState.LoggedOut());
+      }
     }
   }
 

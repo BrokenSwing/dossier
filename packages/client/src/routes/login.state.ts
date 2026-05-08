@@ -1,3 +1,4 @@
+import { STORAGE_SESSION_HEADER } from "@dossier/shared";
 import * as Effect from "effect/Effect";
 
 import { CryptoError, deriveAuthKey, deriveKek, deriveMasterKey, unwrapDek } from "../lib/crypto.js";
@@ -32,6 +33,10 @@ export const unlockAtom = StorageRpc.runtime.fn<{ password: string }>()(
       const dek = yield* unwrapDek(session.encryptedDek, session.dekIv, kek).pipe(
         Effect.mapError(() => new CryptoError({ message: "Incorrect password." })),
       );
+      const client = yield* StorageRpc;
+      yield* client("ValidateSession", undefined, {
+        headers: { [STORAGE_SESSION_HEADER]: session.token },
+      });
       return unlockSession(session, dek);
     }),
 );

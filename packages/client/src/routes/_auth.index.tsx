@@ -305,17 +305,36 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
         <h2 id="upload-dialog-title" className="mb-4 text-base font-semibold text-foreground">Upload document</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="upload-file" className="mb-1 block text-sm font-medium text-foreground">File</label>
-            <input
-              id="upload-file"
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) setForm(setFile(form, f));
-              }}
-              className="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground hover:file:bg-secondary/80"
-            />
+            <label className="mb-1 block text-sm font-medium text-foreground">File</label>
+            {form.file ? (
+              <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{form.file.name}</span>
+                <label htmlFor="upload-file-replace" className="shrink-0 cursor-pointer text-xs text-primary hover:text-primary/80">
+                  Change
+                  <input
+                    id="upload-file-replace"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) setForm(setFile(form, f));
+                    }}
+                  />
+                </label>
+              </div>
+            ) : (
+              <input
+                id="upload-file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setForm(setFile(form, f));
+                }}
+                className="block w-full text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-secondary-foreground hover:file:bg-secondary/80"
+              />
+            )}
           </div>
 
           <div>

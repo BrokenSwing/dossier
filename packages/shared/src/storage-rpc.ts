@@ -97,6 +97,11 @@ export class StorageSessionRpcs extends RpcGroup.make(
     success: Schema.Void,
     error: InternalError,
   }),
+  Rpc.make("ValidateSession", {
+    payload: Schema.Void,
+    success: Schema.Void,
+    error: InternalError,
+  }),
 ) {}
 
 // --- Document RPCs (authenticated) ---
