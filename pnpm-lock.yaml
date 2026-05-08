@@ -137,6 +137,9 @@ importers:
         specifier: ^0.33.0
         version: 0.33.5
     devDependencies:
+      '@dossier/storage':
+        specifier: workspace:*
+        version: link:../storage
       '@effect/language-service':
         specifier: ^0.85.1
         version: 0.85.1
@@ -149,6 +152,9 @@ importers:
       '@types/jsonwebtoken':
         specifier: ^9.0.0
         version: 9.0.10
+      otplib:
+        specifier: ^12.0.0
+        version: 12.0.1
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

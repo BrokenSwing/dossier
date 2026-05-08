@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./ServerLayer": {
+      "types": "./dist/ServerLayer.d.ts",
+      "import": "./dist/ServerLayer.js"
+    }
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
