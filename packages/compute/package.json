@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./ComputeServerLayer": {
+      "types": "./dist/ComputeServerLayer.d.ts",
+      "import": "./dist/ComputeServerLayer.js"
+    }
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
