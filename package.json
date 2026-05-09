@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "pnpm --filter @dossier/shared build && pnpm --filter @dossier/storage build && pnpm --filter @dossier/compute build && concurrently --names storage,compute,client --prefix-colors cyan,yellow,magenta \"pnpm --filter @dossier/storage dev\" \"pnpm --filter @dossier/compute dev\" \"pnpm --filter @dossier/client dev\"",
     "build:services": "pnpm --filter @dossier/shared build && pnpm --filter @dossier/storage build && pnpm --filter @dossier/compute build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
