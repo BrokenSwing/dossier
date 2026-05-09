@@ -236,7 +236,6 @@ export const updateDocumentCollections = (documentId: DocumentId, userId: UserId
 
 // Keyset cursor pagination (D5)
 type SortField = "name" | "createdAt" | "updatedAt";
-type SortDir = "asc" | "desc";
 
 interface Cursor {
   v: string;

@@ -35,9 +35,7 @@ export const openExportDialog = (docs: ReadonlyArray<DocumentMeta>): ExportDialo
 
 export const toggleExportDoc = (state: ExportDialogState, docId: DocumentId): ExportDialogState => ({
   ...state,
-  selectedDocIds: state.selectedDocIds.includes(docId)
-    ? state.selectedDocIds.filter((id) => id !== docId)
-    : [...state.selectedDocIds, docId],
+  selectedDocIds: state.selectedDocIds.includes(docId) ? state.selectedDocIds.filter((id) => id !== docId) : [...state.selectedDocIds, docId],
 });
 
 export const selectAllDocs = (state: ExportDialogState, docs: ReadonlyArray<DocumentMeta>): ExportDialogState => ({
@@ -65,46 +63,44 @@ export const setExportWatermarkText = (state: ExportDialogState, watermarkText: 
   watermarkText,
 });
 
-export const exportAtom = ComputeRpc.runtime.fn<{ state: ExportDialogState; docs: ReadonlyArray<DocumentMeta> }>()(
-  ({ state, docs }, get) => {
-    const session = get(sessionAtom) as UnlockedSession;
-    return Effect.gen(function* () {
-      const client = yield* ComputeRpc;
+export const exportAtom = ComputeRpc.runtime.fn<{ state: ExportDialogState; docs: ReadonlyArray<DocumentMeta> }>()(({ state, docs }, get) => {
+  const session = get(sessionAtom) as UnlockedSession;
+  return Effect.gen(function* () {
+    const client = yield* ComputeRpc;
 
-      const archivePaths: Record<string, string> =
-        state.structureMode === "preserve"
-          ? Object.fromEntries(docs.filter((d) => state.selectedDocIds.includes(d.id)).map((d) => [d.id, d.name]))
-          : {};
+    const archivePaths: Record<string, string> =
+      state.structureMode === "preserve"
+        ? Object.fromEntries(docs.filter((d) => state.selectedDocIds.includes(d.id)).map((d) => [d.id, d.name]))
+        : {};
 
-      const stream = client(
-        "Export",
-        {
-          dek: bytesToBase64Url(session.dek),
-          docIds: [...state.selectedDocIds],
-          exportFormat: state.format,
-          structureMode: state.structureMode,
-          ...(state.structureMode === "preserve" ? { archivePaths } : {}),
-          ...(state.watermarkText.trim() ? { watermarkText: state.watermarkText.trim() } : {}),
-        },
-        { headers: { [COMPUTE_SESSION_HEADER]: session.token } },
-      );
+    const stream = client(
+      "Export",
+      {
+        dek: bytesToBase64Url(session.dek),
+        docIds: [...state.selectedDocIds],
+        exportFormat: state.format,
+        structureMode: state.structureMode,
+        ...(state.structureMode === "preserve" ? { archivePaths } : {}),
+        ...(state.watermarkText.trim() ? { watermarkText: state.watermarkText.trim() } : {}),
+      },
+      { headers: { [COMPUTE_SESSION_HEADER]: session.token } },
+    );
 
-      const bytes = yield* Stream.runFold(stream, new Uint8Array(0), (acc, chunk) => {
-        const next = new Uint8Array(acc.length + chunk.length);
-        next.set(acc, 0);
-        next.set(chunk, acc.length);
-        return next;
-      });
+    const bytes = yield* Stream.runFold(stream, new Uint8Array(0), (acc, chunk) => {
+      const next = new Uint8Array(acc.length + chunk.length);
+      next.set(acc, 0);
+      next.set(chunk, acc.length);
+      return next;
+    });
 
-      const ext = state.format === "zip" ? "zip" : "tar.gz";
-      const mimeType = state.format === "zip" ? "application/zip" : "application/gzip";
-      const blob = new Blob([bytes], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `export.${ext}`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }).pipe(Reactivity.mutation({}));
-  },
-);
+    const ext = state.format === "zip" ? "zip" : "tar.gz";
+    const mimeType = state.format === "zip" ? "application/zip" : "application/gzip";
+    const blob = new Blob([bytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `export.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }).pipe(Reactivity.mutation({}));
+});

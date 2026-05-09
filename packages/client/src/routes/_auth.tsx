@@ -8,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import { StorageRpc } from "../lib/rpc.js";
 import { isTokenExpired, sessionAtom, SessionState, type UnlockedSession } from "../session.js";
 import { Route as rootRoute } from "./__root.js";
-import { initialUploadFormState, setFile, uploadFormAtom, uploadOpenAtom } from "./_auth.index.upload.js";
 import {
   buildTree,
   confirmDeleteCollectionAtom,
@@ -22,6 +21,7 @@ import {
   type CollectionNode,
 } from "./_auth.index.collections.js";
 import { selectedTagsAtom, toggleTag } from "./_auth.index.tags.js";
+import { initialUploadFormState, setFile, uploadFormAtom, uploadOpenAtom } from "./_auth.index.upload.js";
 import { logoutAtom } from "./_auth.logout.js";
 
 export const Route = createRoute({
@@ -81,12 +81,7 @@ function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden" onClick={() => setSidebarOpen(false)} />}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top bar */}
@@ -101,18 +96,11 @@ function AppShell() {
           </button>
           <span className="text-sm font-semibold text-foreground">Dossier</span>
         </div>
-        <main
-          className="relative flex flex-1 flex-col overflow-y-auto"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
+        <main className="relative flex flex-1 flex-col overflow-y-auto" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
           <Outlet />
           {isDragging && (
             <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-primary bg-primary/5">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">
-                ↑
-              </div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">↑</div>
               <p className="text-sm font-medium text-primary">Drop to upload the document</p>
             </div>
           )}
@@ -137,12 +125,12 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 md:static md:w-56 md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 md:static md:w-56 md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+    >
       {/* Logo */}
       <div className="flex h-13 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">
-          D
-        </div>
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">D</div>
         <span className="text-sm font-semibold text-sidebar-foreground">Dossier</span>
         <button
           type="button"
@@ -241,9 +229,7 @@ function CollectionTree({ session }: { session: UnlockedSession }) {
             type="button"
             onClick={() => setSelectedCollection(null)}
             className={`w-full rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors ${
-              selectedCollection === null
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+              selectedCollection === null ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60"
             }`}
           >
             All documents
@@ -284,18 +270,38 @@ function CollectionTreeItem({ node, depth }: { node: CollectionNode; depth: numb
           {collection.name}
         </button>
         <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-          <button type="button" aria-label={`Create child collection in ${collection.name}`}
+          <button
+            type="button"
+            aria-label={`Create child collection in ${collection.name}`}
             onClick={() => setCreateDialog(openCreateCollectionDialog(collection.id))}
-            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground">+</button>
-          <button type="button" aria-label={`Edit collection ${collection.name}`}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            aria-label={`Edit collection ${collection.name}`}
             onClick={() => setEditDialog(openEditCollectionDialog(collection))}
-            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground">✎</button>
-          <button type="button" aria-label={`Move collection ${collection.name}`}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground"
+          >
+            ✎
+          </button>
+          <button
+            type="button"
+            aria-label={`Move collection ${collection.name}`}
             onClick={() => setMoveDialog(openMoveCollectionDialog(collection))}
-            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground">↕</button>
-          <button type="button" aria-label={`Delete collection ${collection.name}`}
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-sidebar-accent-foreground"
+          >
+            ↕
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete collection ${collection.name}`}
             onClick={() => setDeleteDialog(collection)}
-            className="rounded p-1 text-[10px] text-muted-foreground hover:text-destructive">×</button>
+            className="rounded p-1 text-[10px] text-muted-foreground hover:text-destructive"
+          >
+            ×
+          </button>
         </div>
       </div>
       {children.length > 0 && (
@@ -334,9 +340,7 @@ function TagFilter({ session }: { session: UnlockedSession }) {
                   type="button"
                   onClick={() => setSelectedTags(toggleTag(selectedTags, tag.id as TagId))}
                   className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors ${
-                    active
-                      ? "bg-primary/15 text-primary"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                    active ? "bg-primary/15 text-primary" : "text-sidebar-foreground hover:bg-sidebar-accent/60"
                   }`}
                 >
                   <span className="truncate">{tag.name}</span>

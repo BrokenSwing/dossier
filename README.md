@@ -41,13 +41,13 @@ Users who don't trust the storage operator can self-host the compute layer so th
 
 ## Tech stack
 
-| Layer | Tech |
-|---|---|
-| Storage | Effect-TS, Node.js, SQLite (better-sqlite3), Argon2id, JWT |
-| Compute | Effect-TS, Node.js, pdf-lib, sharp, archiver |
-| Client | React 19, TanStack Router, Effect-TS, hash-wasm (Argon2id), Web Crypto API |
-| Shared | Effect-TS Schema (RPC contracts, domain types) |
-| Monorepo | pnpm workspaces |
+| Layer    | Tech                                                                       |
+| -------- | -------------------------------------------------------------------------- |
+| Storage  | Effect-TS, Node.js, SQLite (better-sqlite3), Argon2id, JWT                 |
+| Compute  | Effect-TS, Node.js, pdf-lib, sharp, archiver                               |
+| Client   | React 19, TanStack Router, Effect-TS, hash-wasm (Argon2id), Web Crypto API |
+| Shared   | Effect-TS Schema (RPC contracts, domain types)                             |
+| Monorepo | pnpm workspaces                                                            |
 
 ## Project structure
 
@@ -88,14 +88,14 @@ cp packages/client/.env.example packages/client/.env
 
 Key variables:
 
-| File | Variable | Description |
-|---|---|---|
-| `storage/.env` | `JWT_SECRET` | Secret used to sign session tokens — change in production |
-| `storage/.env` | `DB_PATH` | Path to the SQLite database file |
-| `storage/.env` | `BLOB_DIR` | Directory where encrypted blobs are stored |
-| `compute/.env` | `STORAGE_URL` | URL of the running storage service |
-| `client/.env` | `VITE_STORAGE_URL` | Storage service URL (visible to the browser) |
-| `client/.env` | `VITE_COMPUTE_URL` | Compute service URL (visible to the browser) |
+| File           | Variable           | Description                                               |
+| -------------- | ------------------ | --------------------------------------------------------- |
+| `storage/.env` | `JWT_SECRET`       | Secret used to sign session tokens — change in production |
+| `storage/.env` | `DB_PATH`          | Path to the SQLite database file                          |
+| `storage/.env` | `BLOB_DIR`         | Directory where encrypted blobs are stored                |
+| `compute/.env` | `STORAGE_URL`      | URL of the running storage service                        |
+| `client/.env`  | `VITE_STORAGE_URL` | Storage service URL (visible to the browser)              |
+| `client/.env`  | `VITE_COMPUTE_URL` | Compute service URL (visible to the browser)              |
 
 ### Run in development
 

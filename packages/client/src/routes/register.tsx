@@ -41,7 +41,10 @@ function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri:
 
   const isWaiting = Result.isWaiting(result);
   const error = Result.isFailure(result)
-    ? Option.getOrElse(Option.map(Cause.failureOption(result.cause), (e) => e.message), () => "Registration failed.")
+    ? Option.getOrElse(
+        Option.map(Cause.failureOption(result.cause), (e) => e.message),
+        () => "Registration failed.",
+      )
     : null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -61,19 +64,28 @@ function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri:
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Username">
-          <input type="text" autoComplete="username" required value={username}
-            onChange={(e) => setUsername(e.target.value)} className="input" />
+          <input type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="input" />
         </Field>
         <Field label="Password">
-          <input type="password" autoComplete="new-password" required value={password}
-            onChange={(e) => setPassword(e.target.value)} className="input" />
+          <input
+            type="password"
+            autoComplete="new-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input"
+          />
         </Field>
         <Field label="Confirm password">
-          <input type="password" autoComplete="new-password" required value={confirm}
-            onChange={(e) => setConfirm(e.target.value)} className="input" />
-          {password && confirm && password !== confirm && (
-            <p className="mt-1 text-xs text-destructive">Passwords do not match.</p>
-          )}
+          <input
+            type="password"
+            autoComplete="new-password"
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="input"
+          />
+          {password && confirm && password !== confirm && <p className="mt-1 text-xs text-destructive">Passwords do not match.</p>}
         </Field>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <button type="submit" disabled={isWaiting || password !== confirm} className="btn-primary w-full">
@@ -82,7 +94,9 @@ function CredentialsStep({ onSuccess }: { onSuccess: (username: string, totpUri:
       </form>
       <p className="mt-5 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link to="/login" className="font-medium text-primary hover:text-primary/80">Sign in</Link>
+        <Link to="/login" className="font-medium text-primary hover:text-primary/80">
+          Sign in
+        </Link>
       </p>
     </>
   );
@@ -97,7 +111,10 @@ function TotpStep({ username, totpUri }: { username: string; totpUri: string }) 
 
   const isWaiting = Result.isWaiting(result);
   const error = Result.isFailure(result)
-    ? Option.getOrElse(Option.map(Cause.failureOption(result.cause), (e) => e.message), () => "Invalid code.")
+    ? Option.getOrElse(
+        Option.map(Cause.failureOption(result.cause), (e) => e.message),
+        () => "Invalid code.",
+      )
     : null;
 
   useEffect(() => {
@@ -114,9 +131,7 @@ function TotpStep({ username, totpUri }: { username: string; totpUri: string }) 
     <>
       <div className="mb-5">
         <h1 className="text-xl font-semibold text-foreground">Set up authenticator</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.</p>
       </div>
       <div className="mb-5 flex justify-center rounded-lg bg-muted p-4">
         {qrDataUrl ? (
@@ -127,10 +142,17 @@ function TotpStep({ username, totpUri }: { username: string; totpUri: string }) 
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="6-digit code">
-          <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required
-            autoComplete="one-time-code" value={code}
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            required
+            autoComplete="one-time-code"
+            value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            className="input text-center tracking-widest" />
+            className="input text-center tracking-widest"
+          />
         </Field>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <button type="submit" disabled={isWaiting || code.length !== 6} className="btn-primary w-full">

@@ -9,8 +9,6 @@ import React from "react";
 
 import { StorageRpc } from "../lib/rpc.js";
 import { sessionAtom, type UnlockedSession } from "../session.js";
-import { Route as authRoute } from "./_auth.js";
-import { previewAtom, previewDataAtom, watermarkPreviewPendingAtom, type PreviewTarget, type WatermarkPreviewPending } from "./_auth.index.preview.js";
 import {
   addEditTag,
   confirmDeleteAtom,
@@ -26,8 +24,6 @@ import {
   toggleEditCollection,
   updateCollectionsAtom,
   updateTagsAtom,
-  type EditDocumentDialogState,
-  type RenameDialogState,
 } from "./_auth.index.actions.js";
 import {
   confirmDeleteCollectionAtom,
@@ -37,20 +33,13 @@ import {
   editCollectionDialogAtom,
   moveCollectionAtom,
   moveCollectionDialogAtom,
-  openCreateCollectionDialog,
-  openEditCollectionDialog,
-  openMoveCollectionDialog,
   selectedCollectionAtom,
   setCreateCollectionName,
   setEditCollectionName,
   setEditWatermarkText,
   setMoveCollectionParent,
   updateCollectionAtom,
-  type CreateCollectionDialogState,
-  type EditCollectionDialogState,
-  type MoveCollectionDialogState,
 } from "./_auth.index.collections.js";
-import { clearTags, selectedTagsAtom, toggleTag } from "./_auth.index.tags.js";
 import {
   deselectAllDocs,
   exportAtom,
@@ -62,19 +51,13 @@ import {
   setExportStructureMode,
   setExportWatermarkText,
   toggleExportDoc,
-  type ExportDialogState,
 } from "./_auth.index.export.js";
+import { previewAtom, previewDataAtom, watermarkPreviewPendingAtom, type PreviewTarget } from "./_auth.index.preview.js";
+import { clearTags, selectedTagsAtom, toggleTag } from "./_auth.index.tags.js";
+import { Route as authRoute } from "./_auth.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
-import {
-  appendCursor,
-  docListAtom,
-  setNameFilter,
-  toggleSort,
-  type DocListState,
-  type SortDirection,
-  type SortField,
-} from "./_auth.index.docList.js";
+import { appendCursor, docListAtom, setNameFilter, toggleSort, type SortDirection, type SortField } from "./_auth.index.docList.js";
 import {
   addTag,
   initialUploadFormState,
@@ -86,7 +69,6 @@ import {
   uploadAtom,
   uploadFormAtom,
   uploadOpenAtom,
-  type UploadFormState,
 } from "./_auth.index.upload.js";
 
 export const Route = createRoute({
@@ -172,7 +154,9 @@ function DocumentsPage() {
               className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/20"
             >
               {activeTagNames[i]}
-              <span aria-hidden="true" className="opacity-60">×</span>
+              <span aria-hidden="true" className="opacity-60">
+                ×
+              </span>
             </button>
           ))}
           <button
@@ -186,47 +170,47 @@ function DocumentsPage() {
       )}
 
       <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border bg-muted/40 text-left">
-            <th className="px-4 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              <SortButton
-                label="Name"
-                active={state.sortField === "name"}
-                direction={state.sortDirection}
-                onClick={() => setState(toggleSort(state, "name"))}
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/40 text-left">
+              <th className="px-4 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                <SortButton
+                  label="Name"
+                  active={state.sortField === "name"}
+                  direction={state.sortDirection}
+                  onClick={() => setState(toggleSort(state, "name"))}
+                />
+              </th>
+              <th className="hidden py-2.5 pr-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">Format</th>
+              <th className="hidden py-2.5 pr-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:table-cell">Tags</th>
+              <th className="hidden py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
+                <SortButton
+                  label="Date"
+                  active={state.sortField === "createdAt"}
+                  direction={state.sortDirection}
+                  onClick={() => setState(toggleSort(state, "createdAt"))}
+                />
+              </th>
+              <th className="py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase" />
+            </tr>
+          </thead>
+          <tbody>
+            {state.cursors.map((cursor, i) => (
+              <DocumentPageRows
+                key={cursor ?? "__first__"}
+                sortField={state.sortField}
+                sortDirection={state.sortDirection}
+                nameFilter={state.nameFilter || undefined}
+                collectionFilter={selectedCollection ?? undefined}
+                tagFilter={tagFilter}
+                cursor={cursor}
+                token={session.token}
+                isLastPage={i === state.cursors.length - 1}
+                onLoadMore={(nextCursor) => setState(appendCursor(state, nextCursor))}
               />
-            </th>
-            <th className="hidden py-2.5 pr-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">Format</th>
-            <th className="hidden py-2.5 pr-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:table-cell">Tags</th>
-            <th className="hidden py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:table-cell">
-              <SortButton
-                label="Date"
-                active={state.sortField === "createdAt"}
-                direction={state.sortDirection}
-                onClick={() => setState(toggleSort(state, "createdAt"))}
-              />
-            </th>
-            <th className="py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase" />
-          </tr>
-        </thead>
-        <tbody>
-          {state.cursors.map((cursor, i) => (
-            <DocumentPageRows
-              key={cursor ?? "__first__"}
-              sortField={state.sortField}
-              sortDirection={state.sortDirection}
-              nameFilter={state.nameFilter || undefined}
-              collectionFilter={selectedCollection ?? undefined}
-              tagFilter={tagFilter}
-              cursor={cursor}
-              token={session.token}
-              isLastPage={i === state.cursors.length - 1}
-              onLoadMore={(nextCursor) => setState(appendCursor(state, nextCursor))}
-            />
-          ))}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <UploadDialog session={session} />
@@ -269,9 +253,7 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
 
   const availableTags: ReadonlyArray<Tag> = Result.isSuccess(tagsResult) ? tagsResult.value : [];
   const filteredSuggestions = form.tagInput.trim()
-    ? availableTags
-        .filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()) && !form.selectedTags.includes(t.name))
-        .slice(0, 5)
+    ? availableTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()) && !form.selectedTags.includes(t.name)).slice(0, 5)
     : [];
 
   const collections: ReadonlyArray<Collection> = Result.isSuccess(collectionsResult) ? collectionsResult.value : [];
@@ -300,9 +282,16 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="upload-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upload-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-md rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="upload-dialog-title" className="mb-4 text-base font-semibold text-foreground">Upload document</h2>
+        <h2 id="upload-dialog-title" className="mb-4 text-base font-semibold text-foreground">
+          Upload document
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-foreground">File</label>
@@ -338,7 +327,9 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
           </div>
 
           <div>
-            <label htmlFor="upload-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
+            <label htmlFor="upload-name" className="mb-1 block text-sm font-medium text-foreground">
+              Name
+            </label>
             <input
               id="upload-name"
               type="text"
@@ -350,7 +341,9 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
           </div>
 
           <div>
-            <label htmlFor="upload-tag-input" className="mb-1 block text-sm font-medium text-foreground">Tags</label>
+            <label htmlFor="upload-tag-input" className="mb-1 block text-sm font-medium text-foreground">
+              Tags
+            </label>
             {form.selectedTags.length > 0 && (
               <div className="mb-1 flex flex-wrap gap-1">
                 {form.selectedTags.map((tag) => (
@@ -380,8 +373,8 @@ function UploadDialog({ session }: { session: UnlockedSession }) {
                   }
                 }}
                 id="upload-tag-input"
-              className="input w-full"
-              placeholder="Add tag and press Enter…"
+                className="input w-full"
+                placeholder="Add tag and press Enter…"
               />
               {filteredSuggestions.length > 0 && (
                 <ul className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-md">
@@ -452,7 +445,17 @@ interface PageRowsProps {
   readonly onLoadMore: (nextCursor: string) => void;
 }
 
-function DocumentPageRows({ sortField, sortDirection, nameFilter, collectionFilter, tagFilter, cursor, token, isLastPage, onLoadMore }: PageRowsProps) {
+function DocumentPageRows({
+  sortField,
+  sortDirection,
+  nameFilter,
+  collectionFilter,
+  tagFilter,
+  cursor,
+  token,
+  isLastPage,
+  onLoadMore,
+}: PageRowsProps) {
   const queryAtom = StorageRpc.query(
     "ListDocuments",
     { sortField, sortDirection, nameFilter, collectionFilter, tagFilter, cursor, limit: 20 },
@@ -531,17 +534,13 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
 
   function openWatermarkPreview(e: React.MouseEvent) {
     e.stopPropagation();
-    const collectionWatermark = doc.collectionIds
-      .map((cid) => collections.find((c) => c.id === cid)?.watermark?.text)
-      .find((t) => t !== undefined) ?? "";
+    const collectionWatermark =
+      doc.collectionIds.map((cid) => collections.find((c) => c.id === cid)?.watermark?.text).find((t) => t !== undefined) ?? "";
     setWatermarkPending({ documentId: doc.id, format: doc.format, name: doc.name, watermarkText: collectionWatermark });
   }
 
   return (
-    <tr
-      className="group border-b border-border cursor-pointer transition-colors hover:bg-muted/30 last:border-0"
-      onClick={() => setPreview(target)}
-    >
+    <tr className="group border-b border-border cursor-pointer transition-colors hover:bg-muted/30 last:border-0" onClick={() => setPreview(target)}>
       <td className="px-4 py-3 font-medium text-foreground">{doc.name}</td>
       <td className="hidden py-3 pr-4 sm:table-cell">
         <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -563,7 +562,10 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
           <button
             type="button"
             aria-label={`Rename ${doc.name}`}
-            onClick={(e) => { e.stopPropagation(); setRenameDialog(openRenameDialog(doc)); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setRenameDialog(openRenameDialog(doc));
+            }}
             className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             Rename
@@ -571,7 +573,10 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
           <button
             type="button"
             aria-label={`Edit tags and collections for ${doc.name}`}
-            onClick={(e) => { e.stopPropagation(); setEditDialog(openEditDocumentDialog(doc)); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditDialog(openEditDocumentDialog(doc));
+            }}
             className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             Edit
@@ -587,7 +592,10 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
           <button
             type="button"
             aria-label={`Delete ${doc.name}`}
-            onClick={(e) => { e.stopPropagation(); setConfirmDelete(doc); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDelete(doc);
+            }}
             className="rounded px-2 py-1 text-xs text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             Delete
@@ -600,17 +608,7 @@ function DocumentRow({ doc }: { doc: DocumentMeta }) {
 
 // --- UI helpers ---
 
-function SortButton({
-  label,
-  active,
-  direction,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  direction: SortDirection;
-  onClick: () => void;
-}) {
+function SortButton({ label, active, direction, onClick }: { label: string; active: boolean; direction: SortDirection; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -654,14 +652,21 @@ function CreateCollectionDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="create-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-col-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
         <h2 id="create-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">
           {state.parentId ? "New sub-collection" : "New collection"}
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="create-col-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
+            <label htmlFor="create-col-name" className="mb-1 block text-sm font-medium text-foreground">
+              Name
+            </label>
             <input
               id="create-col-name"
               type="text"
@@ -717,12 +722,21 @@ function EditCollectionDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="edit-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-col-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="edit-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">Edit collection</h2>
+        <h2 id="edit-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">
+          Edit collection
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="edit-col-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
+            <label htmlFor="edit-col-name" className="mb-1 block text-sm font-medium text-foreground">
+              Name
+            </label>
             <input
               id="edit-col-name"
               type="text"
@@ -787,9 +801,16 @@ function DeleteCollectionConfirmDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="delete-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-col-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="delete-col-dialog-title" className="mb-2 text-base font-semibold text-foreground">Delete collection</h2>
+        <h2 id="delete-col-dialog-title" className="mb-2 text-base font-semibold text-foreground">
+          Delete collection
+        </h2>
         <p className="mb-3 text-sm text-muted-foreground">
           Are you sure you want to delete <strong>{collection.name}</strong>?
         </p>
@@ -848,20 +869,25 @@ function MoveCollectionDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="move-col-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="move-col-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
         <h2 id="move-col-dialog-title" className="mb-4 text-base font-semibold text-foreground">
           Move "{state.collectionName}"
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="move-col-parent" className="mb-1 block text-sm font-medium text-foreground">New parent</label>
+            <label htmlFor="move-col-parent" className="mb-1 block text-sm font-medium text-foreground">
+              New parent
+            </label>
             <select
               id="move-col-parent"
               value={state.newParentId ?? ""}
-              onChange={(e) =>
-                setState(setMoveCollectionParent(state, e.target.value ? e.target.value as CollectionId : null))
-              }
+              onChange={(e) => setState(setMoveCollectionParent(state, e.target.value ? (e.target.value as CollectionId) : null))}
               className="input w-full"
             >
               <option value="">None (root level)</option>
@@ -914,12 +940,21 @@ function RenameDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rename-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="rename-dialog-title" className="mb-4 text-base font-semibold text-foreground">Rename document</h2>
+        <h2 id="rename-dialog-title" className="mb-4 text-base font-semibold text-foreground">
+          Rename document
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="rename-name" className="mb-1 block text-sm font-medium text-foreground">Name</label>
+            <label htmlFor="rename-name" className="mb-1 block text-sm font-medium text-foreground">
+              Name
+            </label>
             <input
               id="rename-name"
               type="text"
@@ -968,13 +1003,7 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
 
   const availableTags: ReadonlyArray<Tag> = Result.isSuccess(tagsResult) ? tagsResult.value : [];
   const filteredSuggestions = state.tagInput.trim()
-    ? availableTags
-        .filter(
-          (t) =>
-            t.name.toLowerCase().includes(state.tagInput.toLowerCase()) &&
-            !state.selectedTags.includes(t.name),
-        )
-        .slice(0, 5)
+    ? availableTags.filter((t) => t.name.toLowerCase().includes(state.tagInput.toLowerCase()) && !state.selectedTags.includes(t.name)).slice(0, 5)
     : [];
   const collections: ReadonlyArray<Collection> = Result.isSuccess(collectionsResult) ? collectionsResult.value : [];
 
@@ -1004,12 +1033,21 @@ function EditDocumentDialog({ session }: { session: UnlockedSession }) {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="edit-doc-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-doc-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-md rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="edit-doc-dialog-title" className="mb-4 text-base font-semibold text-foreground">Edit document</h2>
+        <h2 id="edit-doc-dialog-title" className="mb-4 text-base font-semibold text-foreground">
+          Edit document
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="edit-tag-input" className="mb-1 block text-sm font-medium text-foreground">Tags</label>
+            <label htmlFor="edit-tag-input" className="mb-1 block text-sm font-medium text-foreground">
+              Tags
+            </label>
             {state.selectedTags.length > 0 && (
               <div className="mb-1 flex flex-wrap gap-1">
                 {state.selectedTags.map((tag) => (
@@ -1122,9 +1160,16 @@ function DeleteConfirmDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="delete-dialog-title" className="mb-2 text-base font-semibold text-foreground">Delete document</h2>
+        <h2 id="delete-dialog-title" className="mb-2 text-base font-semibold text-foreground">
+          Delete document
+        </h2>
         <p className="mb-4 text-sm text-muted-foreground">
           Are you sure you want to delete <strong>{doc.name}</strong>? This cannot be undone.
         </p>
@@ -1183,9 +1228,16 @@ function ExportDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 flex w-full max-w-lg flex-col gap-4 rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="export-dialog-title" className="text-base font-semibold text-foreground">Export documents</h2>
+        <h2 id="export-dialog-title" className="text-base font-semibold text-foreground">
+          Export documents
+        </h2>
 
         <form onSubmit={handleExport} className="flex flex-col gap-4">
           {/* Format */}
@@ -1334,9 +1386,16 @@ function WatermarkPreviewDialog() {
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="wm-preview-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wm-preview-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div className="mx-4 w-full max-w-sm rounded-xl bg-card p-6 shadow-2xl ring-1 ring-border">
-        <h2 id="wm-preview-dialog-title" className="mb-1 text-lg font-semibold text-foreground">Watermark preview</h2>
+        <h2 id="wm-preview-dialog-title" className="mb-1 text-lg font-semibold text-foreground">
+          Watermark preview
+        </h2>
         <p className="mb-4 truncate text-sm text-muted-foreground">{pending.name}</p>
         <form onSubmit={handleConfirm} className="flex flex-col gap-4">
           <div>
@@ -1402,20 +1461,11 @@ function DocumentPreview() {
         </button>
       </div>
 
-      <div
-        className="flex flex-1 items-start justify-center overflow-auto p-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {isLoading && (
-          <p className="mt-16 text-sm text-background/60">Loading…</p>
-        )}
-        {error && (
-          <p className="mt-16 text-sm text-destructive-foreground">{error}</p>
-        )}
+      <div className="flex flex-1 items-start justify-center overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
+        {isLoading && <p className="mt-16 text-sm text-background/60">Loading…</p>}
+        {error && <p className="mt-16 text-sm text-destructive-foreground">{error}</p>}
         {bytes && target.format === "pdf" && <PdfViewer bytes={bytes} />}
-        {bytes && (target.format === "jpg" || target.format === "png") && (
-          <ImageViewer bytes={bytes} format={target.format} />
-        )}
+        {bytes && (target.format === "jpg" || target.format === "png") && <ImageViewer bytes={bytes} format={target.format} />}
       </div>
     </div>
   );

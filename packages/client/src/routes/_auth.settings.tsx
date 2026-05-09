@@ -4,6 +4,7 @@ import React, { useState } from "react";
 
 import { sessionAtom, SessionState, type UnlockedSession } from "../session.js";
 import { Route as authRoute } from "./_auth.js";
+import { rotateKeyAtom, type KeyRotationProgress } from "./_auth.settings.keyrotation.js";
 import {
   changePasswordAtom,
   initialChangePasswordForm,
@@ -12,7 +13,6 @@ import {
   setNewPassword,
   setOldPassword,
 } from "./_auth.settings.state.js";
-import { rotateKeyAtom, type KeyRotationProgress } from "./_auth.settings.keyrotation.js";
 
 export const Route = createRoute({
   getParentRoute: () => authRoute,
@@ -87,19 +87,39 @@ function ChangePasswordSection() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-foreground">Current password</span>
-          <input id="old-password" type="password" autoComplete="current-password" value={form.oldPassword}
-            onChange={(e) => setForm(setOldPassword(form, e.target.value))} className="input" required />
+          <input
+            id="old-password"
+            type="password"
+            autoComplete="current-password"
+            value={form.oldPassword}
+            onChange={(e) => setForm(setOldPassword(form, e.target.value))}
+            className="input"
+            required
+          />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-foreground">New password</span>
-          <input id="new-password" type="password" autoComplete="new-password" value={form.newPassword}
-            onChange={(e) => setForm(setNewPassword(form, e.target.value))} className="input" required />
+          <input
+            id="new-password"
+            type="password"
+            autoComplete="new-password"
+            value={form.newPassword}
+            onChange={(e) => setForm(setNewPassword(form, e.target.value))}
+            className="input"
+            required
+          />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-foreground">Confirm new password</span>
-          <input id="confirm-password" type="password" autoComplete="new-password" value={form.confirmPassword}
+          <input
+            id="confirm-password"
+            type="password"
+            autoComplete="new-password"
+            value={form.confirmPassword}
             onChange={(e) => setForm(setConfirmPassword(form, e.target.value))}
-            className={`input ${passwordMismatch ? "border-destructive focus-visible:ring-destructive/30" : ""}`} required />
+            className={`input ${passwordMismatch ? "border-destructive focus-visible:ring-destructive/30" : ""}`}
+            required
+          />
           {passwordMismatch && <p className="text-xs text-destructive">Passwords do not match.</p>}
         </label>
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -207,7 +227,15 @@ function KeyRotationSection() {
             <button type="submit" disabled={!password} className="btn-primary">
               Start rotation
             </button>
-            <button type="button" onClick={() => { setPhase("idle"); setPassword(""); setError(null); }} className="btn-outline">
+            <button
+              type="button"
+              onClick={() => {
+                setPhase("idle");
+                setPassword("");
+                setError(null);
+              }}
+              className="btn-outline"
+            >
               Cancel
             </button>
           </div>

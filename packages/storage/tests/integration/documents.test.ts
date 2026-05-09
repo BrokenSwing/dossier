@@ -36,7 +36,9 @@ layer(DocumentsTestLayer)("Storage HTTP integration — documents", (it) => {
       Effect.gen(function* () {
         const client = yield* StorageRpcClient;
         const token = yield* TestSessionToken;
-        const exit = yield* Effect.exit(client.GetDocumentMeta({ documentId: "no-such-id" as any }, { headers: { [STORAGE_SESSION_HEADER]: token } }));
+        const exit = yield* Effect.exit(
+          client.GetDocumentMeta({ documentId: "no-such-id" as any }, { headers: { [STORAGE_SESSION_HEADER]: token } }),
+        );
         expect(exit._tag).toBe("Failure");
       }),
     );

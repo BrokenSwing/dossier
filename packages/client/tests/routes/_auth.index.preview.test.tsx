@@ -1,3 +1,4 @@
+import type { DocumentId } from "@dossier/shared";
 import { RegistryContext, RegistryProvider } from "@effect-atom/atom-react";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
@@ -5,11 +6,10 @@ import userEvent from "@testing-library/user-event";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
 
-import type { DocumentId } from "@dossier/shared";
+import { Route as rootRoute } from "../../src/routes/__root.js";
 import { Route as indexRoute } from "../../src/routes/_auth.index.js";
 import { previewAtom, type PreviewTarget } from "../../src/routes/_auth.index.preview.js";
 import { Route as authRoute } from "../../src/routes/_auth.js";
-import { Route as rootRoute } from "../../src/routes/__root.js";
 import { sessionAtom, SessionState } from "../../src/session.js";
 
 const unlockedSession = SessionState.Unlocked({

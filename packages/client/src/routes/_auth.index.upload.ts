@@ -45,9 +45,7 @@ export const setUploadName = (state: UploadFormState, name: string): UploadFormS
 export const setTagInput = (state: UploadFormState, tagInput: string): UploadFormState => ({ ...state, tagInput });
 
 export const addTag = (state: UploadFormState, tag: string): UploadFormState =>
-  state.selectedTags.includes(tag)
-    ? { ...state, tagInput: "" }
-    : { ...state, selectedTags: [...state.selectedTags, tag], tagInput: "" };
+  state.selectedTags.includes(tag) ? { ...state, tagInput: "" } : { ...state, selectedTags: [...state.selectedTags, tag], tagInput: "" };
 
 export const removeTag = (state: UploadFormState, tag: string): UploadFormState => ({
   ...state,
@@ -88,8 +86,5 @@ export const uploadAtom = StorageRpc.runtime.fn<void>()((_arg, get) => {
       ...(form.selectedTags.length > 0 ? { tagNames: form.selectedTags } : {}),
       ...(form.selectedCollectionIds.length > 0 ? { collectionIds: form.selectedCollectionIds as CollectionId[] } : {}),
     });
-  }).pipe(
-    Effect.provide(FetchHttpClient.layer),
-    Reactivity.mutation({ documents: [] }),
-  );
+  }).pipe(Effect.provide(FetchHttpClient.layer), Reactivity.mutation({ documents: [] }));
 });

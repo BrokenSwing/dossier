@@ -3,7 +3,6 @@ import * as net from "node:net";
 import { KdfParams, StorageRpcs, STORAGE_SESSION_HEADER } from "@dossier/shared";
 import { NodeContext, NodeHttpClient } from "@effect/platform-node";
 import { FileSystem } from "@effect/platform/FileSystem";
-import { authenticator } from "otplib";
 import * as RpcClient from "@effect/rpc/RpcClient";
 import type { RpcClientError } from "@effect/rpc/RpcClientError";
 import * as RpcSerialization from "@effect/rpc/RpcSerialization";
@@ -13,6 +12,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Scope from "effect/Scope";
+import { authenticator } from "otplib";
 
 import { StorageServerLayer } from "../../src/ServerLayer.js";
 
@@ -94,10 +94,9 @@ const StorageRpcClientLayer: Layer.Layer<StorageRpcClient, never, TestPort> = La
 
 // Full integration layer used in layer() calls: starts the server, provides the
 // RPC client, and exposes the bound port.
-export const StorageIntegrationLayer = Layer.mergeAll(
-  StorageRpcClientLayer.pipe(Layer.provide(TestServerLayer)),
-  TestServerLayer,
-).pipe(Layer.provide(NodeContext.layer));
+export const StorageIntegrationLayer = Layer.mergeAll(StorageRpcClientLayer.pipe(Layer.provide(TestServerLayer)), TestServerLayer).pipe(
+  Layer.provide(NodeContext.layer),
+);
 
 // --- Auth helpers ---
 

@@ -1,3 +1,4 @@
+import type { Collection, CollectionId } from "@dossier/shared";
 import { RegistryContext, RegistryProvider } from "@effect-atom/atom-react";
 import type * as RegistryModule from "@effect-atom/atom/Registry";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
@@ -6,8 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
 
-import type { Collection, CollectionId } from "@dossier/shared";
-import { Route as indexRoute } from "../../src/routes/_auth.index.js";
+import { Route as rootRoute } from "../../src/routes/__root.js";
 import {
   confirmDeleteCollectionAtom,
   createCollectionDialogAtom,
@@ -17,8 +17,8 @@ import {
   openEditCollectionDialog,
   openMoveCollectionDialog,
 } from "../../src/routes/_auth.index.collections.js";
+import { Route as indexRoute } from "../../src/routes/_auth.index.js";
 import { Route as authRoute } from "../../src/routes/_auth.js";
-import { Route as rootRoute } from "../../src/routes/__root.js";
 import { sessionAtom, SessionState } from "../../src/session.js";
 
 const unlockedSession = SessionState.Unlocked({

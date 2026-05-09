@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  appendCursor,
-  setNameFilter,
-  toggleSort,
-  type DocListState,
-} from "../../src/routes/_auth.index.docList.js";
+import { appendCursor, setNameFilter, toggleSort, type DocListState } from "../../src/routes/_auth.index.docList.js";
 
 const base: DocListState = {
   sortField: "createdAt",

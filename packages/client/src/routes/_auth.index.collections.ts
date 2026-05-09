@@ -44,20 +44,17 @@ export interface CreateCollectionDialogState {
   readonly parentId: CollectionId | null;
 }
 
-export const createCollectionDialogAtom = Atom.writable<
-  CreateCollectionDialogState | null,
-  CreateCollectionDialogState | null
->(() => null, (ctx, v) => ctx.setSelf(v)).pipe(Atom.keepAlive);
+export const createCollectionDialogAtom = Atom.writable<CreateCollectionDialogState | null, CreateCollectionDialogState | null>(
+  () => null,
+  (ctx, v) => ctx.setSelf(v),
+).pipe(Atom.keepAlive);
 
 export const openCreateCollectionDialog = (parentId: CollectionId | null): CreateCollectionDialogState => ({
   name: "",
   parentId,
 });
 
-export const setCreateCollectionName = (
-  state: CreateCollectionDialogState,
-  name: string,
-): CreateCollectionDialogState => ({ ...state, name });
+export const setCreateCollectionName = (state: CreateCollectionDialogState, name: string): CreateCollectionDialogState => ({ ...state, name });
 
 // --- Edit collection dialog (rename + watermark) ---
 
@@ -67,10 +64,10 @@ export interface EditCollectionDialogState {
   readonly watermarkText: string;
 }
 
-export const editCollectionDialogAtom = Atom.writable<
-  EditCollectionDialogState | null,
-  EditCollectionDialogState | null
->(() => null, (ctx, v) => ctx.setSelf(v)).pipe(Atom.keepAlive);
+export const editCollectionDialogAtom = Atom.writable<EditCollectionDialogState | null, EditCollectionDialogState | null>(
+  () => null,
+  (ctx, v) => ctx.setSelf(v),
+).pipe(Atom.keepAlive);
 
 export const openEditCollectionDialog = (collection: Collection): EditCollectionDialogState => ({
   collectionId: collection.id,
@@ -78,15 +75,12 @@ export const openEditCollectionDialog = (collection: Collection): EditCollection
   watermarkText: collection.watermark?.text ?? "",
 });
 
-export const setEditCollectionName = (
-  state: EditCollectionDialogState,
-  name: string,
-): EditCollectionDialogState => ({ ...state, name });
+export const setEditCollectionName = (state: EditCollectionDialogState, name: string): EditCollectionDialogState => ({ ...state, name });
 
-export const setEditWatermarkText = (
-  state: EditCollectionDialogState,
-  watermarkText: string,
-): EditCollectionDialogState => ({ ...state, watermarkText });
+export const setEditWatermarkText = (state: EditCollectionDialogState, watermarkText: string): EditCollectionDialogState => ({
+  ...state,
+  watermarkText,
+});
 
 // --- Delete confirm ---
 
@@ -103,10 +97,10 @@ export interface MoveCollectionDialogState {
   readonly newParentId: CollectionId | null;
 }
 
-export const moveCollectionDialogAtom = Atom.writable<
-  MoveCollectionDialogState | null,
-  MoveCollectionDialogState | null
->(() => null, (ctx, v) => ctx.setSelf(v)).pipe(Atom.keepAlive);
+export const moveCollectionDialogAtom = Atom.writable<MoveCollectionDialogState | null, MoveCollectionDialogState | null>(
+  () => null,
+  (ctx, v) => ctx.setSelf(v),
+).pipe(Atom.keepAlive);
 
 export const openMoveCollectionDialog = (collection: Collection): MoveCollectionDialogState => ({
   collectionId: collection.id,
@@ -114,10 +108,10 @@ export const openMoveCollectionDialog = (collection: Collection): MoveCollection
   newParentId: collection.parentId,
 });
 
-export const setMoveCollectionParent = (
-  state: MoveCollectionDialogState,
-  newParentId: CollectionId | null,
-): MoveCollectionDialogState => ({ ...state, newParentId });
+export const setMoveCollectionParent = (state: MoveCollectionDialogState, newParentId: CollectionId | null): MoveCollectionDialogState => ({
+  ...state,
+  newParentId,
+});
 
 // --- RPC mutations ---
 
@@ -128,11 +122,7 @@ export const createCollectionAtom = StorageRpc.runtime.fn<{
   const session = get(sessionAtom) as UnlockedSession;
   return Effect.gen(function* () {
     const client = yield* StorageRpc;
-    yield* client(
-      "CreateCollection",
-      { name, parentId },
-      { headers: { [STORAGE_SESSION_HEADER]: session.token } },
-    );
+    yield* client("CreateCollection", { name, parentId }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
   }).pipe(Reactivity.mutation({ collections: [] }));
 });
 
@@ -145,11 +135,7 @@ export const updateCollectionAtom = StorageRpc.runtime.fn<{
   const watermark = watermarkText.trim() ? { text: watermarkText.trim() } : null;
   return Effect.gen(function* () {
     const client = yield* StorageRpc;
-    yield* client(
-      "UpdateCollection",
-      { collectionId, name, watermark },
-      { headers: { [STORAGE_SESSION_HEADER]: session.token } },
-    );
+    yield* client("UpdateCollection", { collectionId, name, watermark }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
   }).pipe(Reactivity.mutation({ collections: [] }));
 });
 
@@ -160,11 +146,7 @@ export const deleteCollectionAtom = StorageRpc.runtime.fn<{
   const session = get(sessionAtom) as UnlockedSession;
   return Effect.gen(function* () {
     const client = yield* StorageRpc;
-    yield* client(
-      "DeleteCollection",
-      { collectionId, recursive },
-      { headers: { [STORAGE_SESSION_HEADER]: session.token } },
-    );
+    yield* client("DeleteCollection", { collectionId, recursive }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
   }).pipe(Reactivity.mutation({ collections: [], documents: [] }));
 });
 
@@ -175,10 +157,6 @@ export const moveCollectionAtom = StorageRpc.runtime.fn<{
   const session = get(sessionAtom) as UnlockedSession;
   return Effect.gen(function* () {
     const client = yield* StorageRpc;
-    yield* client(
-      "MoveCollection",
-      { collectionId, newParentId },
-      { headers: { [STORAGE_SESSION_HEADER]: session.token } },
-    );
+    yield* client("MoveCollection", { collectionId, newParentId }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
   }).pipe(Reactivity.mutation({ collections: [] }));
 });

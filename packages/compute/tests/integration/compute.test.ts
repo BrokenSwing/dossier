@@ -1,6 +1,6 @@
-import { describe, expect, layer } from "@effect/vitest";
 import * as HttpClient from "@effect/platform/HttpClient";
 import * as HttpClientRequest from "@effect/platform/HttpClientRequest";
+import { describe, expect, layer } from "@effect/vitest";
 import * as Chunk from "effect/Chunk";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -114,7 +114,9 @@ layer(TestLayer)("Compute HTTP integration", (it) => {
 
         const documentId = yield* uploadDocument(port, token, original, { name: "preview-doc", format: "pdf" });
 
-        const bytes = yield* collectStream(client.Preview({ dek: TEST_DEK, documentId: documentId as any }, { headers: { [COMPUTE_SESSION_HEADER]: token } }));
+        const bytes = yield* collectStream(
+          client.Preview({ dek: TEST_DEK, documentId: documentId as any }, { headers: { [COMPUTE_SESSION_HEADER]: token } }),
+        );
 
         expect(bytes).toEqual(original);
       }),
@@ -181,10 +183,7 @@ layer(TestLayer)("Compute HTTP integration", (it) => {
         const idB = yield* uploadDocument(port, token, new TextEncoder().encode("document B"), { name: "doc-b", format: "pdf" });
 
         const bytes = yield* collectStream(
-          client.Export(
-            { dek: TEST_DEK, docIds: [idA as any, idB as any], exportFormat: "zip" },
-            { headers: { [COMPUTE_SESSION_HEADER]: token } },
-          ),
+          client.Export({ dek: TEST_DEK, docIds: [idA as any, idB as any], exportFormat: "zip" }, { headers: { [COMPUTE_SESSION_HEADER]: token } }),
         );
 
         // ZIP magic bytes: PK\x03\x04

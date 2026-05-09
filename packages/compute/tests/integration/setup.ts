@@ -3,10 +3,9 @@ import * as net from "node:net";
 import { KdfParams, ComputeRpcs, StorageRpcs, COMPUTE_SESSION_HEADER, STORAGE_SESSION_HEADER } from "@dossier/shared";
 import { StorageServerLayer } from "@dossier/storage/ServerLayer";
 import { NodeContext, NodeHttpClient } from "@effect/platform-node";
+import { FileSystem } from "@effect/platform/FileSystem";
 import * as HttpClient from "@effect/platform/HttpClient";
 import * as HttpClientRequest from "@effect/platform/HttpClientRequest";
-import { FileSystem } from "@effect/platform/FileSystem";
-import { authenticator } from "otplib";
 import * as RpcClient from "@effect/rpc/RpcClient";
 import type { RpcClientError } from "@effect/rpc/RpcClientError";
 import * as RpcSerialization from "@effect/rpc/RpcSerialization";
@@ -16,6 +15,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Scope from "effect/Scope";
+import { authenticator } from "otplib";
 
 import { ComputeServerLayer } from "../../src/ComputeServerLayer.js";
 
@@ -37,10 +37,7 @@ export const TEST_NEW_DEK_BYTES = Buffer.alloc(32, 0xcd);
 export const TEST_NEW_DEK = TEST_NEW_DEK_BYTES.toString("base64url");
 
 // Minimal valid 1×1 PNG (format supported by WatermarkService)
-export const MINIMAL_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-  "base64",
-);
+export const MINIMAL_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
 export { COMPUTE_SESSION_HEADER, STORAGE_SESSION_HEADER };
 
@@ -104,10 +101,9 @@ const StorageTestLayer = Layer.scoped(
     yield* Layer.buildWithScope(testLayer, serverScope).pipe(Effect.orDie);
 
     yield* Effect.addFinalizer(() =>
-      Effect.all(
-        [Scope.close(serverScope, Exit.void).pipe(Effect.orDie), fs.remove(blobDir, { recursive: true }).pipe(Effect.orDie)],
-        { discard: true },
-      ),
+      Effect.all([Scope.close(serverScope, Exit.void).pipe(Effect.orDie), fs.remove(blobDir, { recursive: true }).pipe(Effect.orDie)], {
+        discard: true,
+      }),
     );
 
     return port;
@@ -135,10 +131,7 @@ const StorageRpcClientLayer = Layer.unwrapEffect(
   Effect.gen(function* () {
     const port = yield* StorageTestPort;
     const url = `http://127.0.0.1:${port}/rpc`;
-    const protocolLayer = RpcClient.layerProtocolHttp({ url }).pipe(
-      Layer.provide(RpcSerialization.layerNdjson),
-      Layer.provide(NodeHttpClient.layer),
-    );
+    const protocolLayer = RpcClient.layerProtocolHttp({ url }).pipe(Layer.provide(RpcSerialization.layerNdjson), Layer.provide(NodeHttpClient.layer));
     return Layer.scoped(StorageRpcClient, RpcClient.make(StorageRpcs)).pipe(Layer.provide(protocolLayer));
   }),
 );
@@ -147,10 +140,7 @@ const ComputeRpcClientLayer = Layer.unwrapEffect(
   Effect.gen(function* () {
     const port = yield* ComputeTestPort;
     const url = `http://127.0.0.1:${port}/rpc`;
-    const protocolLayer = RpcClient.layerProtocolHttp({ url }).pipe(
-      Layer.provide(RpcSerialization.layerNdjson),
-      Layer.provide(NodeHttpClient.layer),
-    );
+    const protocolLayer = RpcClient.layerProtocolHttp({ url }).pipe(Layer.provide(RpcSerialization.layerNdjson), Layer.provide(NodeHttpClient.layer));
     return Layer.scoped(ComputeRpcClient, RpcClient.make(ComputeRpcs)).pipe(Layer.provide(protocolLayer));
   }),
 );

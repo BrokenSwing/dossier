@@ -5,8 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { useContext } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Route as loginRoute } from "../../src/routes/login.js";
 import { Route as rootRoute } from "../../src/routes/__root.js";
+import { Route as loginRoute } from "../../src/routes/login.js";
 import { sessionAtom, SessionState } from "../../src/session.js";
 
 function renderLoginPage(initialSession?: ReturnType<typeof SessionState.Locked>) {

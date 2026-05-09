@@ -1,14 +1,12 @@
 import * as net from "node:net";
 
+import { ComputeServerLayer } from "@dossier/compute/ComputeServerLayer";
 import { KdfParams, ComputeRpcs, StorageRpcs, COMPUTE_SESSION_HEADER, STORAGE_SESSION_HEADER } from "@dossier/shared";
 import { StorageServerLayer } from "@dossier/storage/ServerLayer";
-import { ComputeServerLayer } from "@dossier/compute/ComputeServerLayer";
 import { NodeContext, NodeHttpClient } from "@effect/platform-node";
+import { FileSystem } from "@effect/platform/FileSystem";
 import * as HttpClient from "@effect/platform/HttpClient";
 import * as HttpClientRequest from "@effect/platform/HttpClientRequest";
-import { FileSystem } from "@effect/platform/FileSystem";
-import { authenticator } from "otplib";
-import { argon2id } from "hash-wasm";
 import * as RpcClient from "@effect/rpc/RpcClient";
 import type { RpcClientError } from "@effect/rpc/RpcClientError";
 import * as RpcSerialization from "@effect/rpc/RpcSerialization";
@@ -20,14 +18,15 @@ import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
+import { argon2id } from "hash-wasm";
+import { authenticator } from "otplib";
 
 export { COMPUTE_SESSION_HEADER, STORAGE_SESSION_HEADER };
 
 // --- Crypto helpers (mirrors packages/client/src/lib/crypto.ts) ---
 // Inlined because @dossier/client has no Node.js-compatible build output.
 
-const asBuffer = (u: Uint8Array): ArrayBuffer =>
-  u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
+const asBuffer = (u: Uint8Array): ArrayBuffer => u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -77,14 +76,22 @@ const deriveMasterKey = (password: string, kdfParams: KdfParams): Effect.Effect<
 const deriveKek = (masterKey: Uint8Array): Effect.Effect<CryptoKey> =>
   Effect.promise(async () => {
     const mat = await crypto.subtle.importKey("raw", asBuffer(masterKey), "HKDF", false, ["deriveBits"]);
-    const bits = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: new TextEncoder().encode("kek") }, mat, 256);
+    const bits = await crypto.subtle.deriveBits(
+      { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: new TextEncoder().encode("kek") },
+      mat,
+      256,
+    );
     return crypto.subtle.importKey("raw", bits, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   });
 
 const deriveAuthKey = (masterKey: Uint8Array): Effect.Effect<string> =>
   Effect.promise(async () => {
     const mat = await crypto.subtle.importKey("raw", asBuffer(masterKey), "HKDF", false, ["deriveBits"]);
-    const bits = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: new TextEncoder().encode("auth") }, mat, 256);
+    const bits = await crypto.subtle.deriveBits(
+      { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: new TextEncoder().encode("auth") },
+      mat,
+      256,
+    );
     return bytesToHex(new Uint8Array(bits));
   });
 
@@ -141,7 +148,12 @@ const makeStorageConfig = (port: number, blobDir: string) =>
   );
 
 const makeComputeConfig = (computePort: number, storagePort: number) =>
-  ConfigProvider.fromMap(new Map([["PORT", String(computePort)], ["STORAGE_URL", `http://127.0.0.1:${storagePort}`]]));
+  ConfigProvider.fromMap(
+    new Map([
+      ["PORT", String(computePort)],
+      ["STORAGE_URL", `http://127.0.0.1:${storagePort}`],
+    ]),
+  );
 
 // --- Server layers ---
 
@@ -152,9 +164,13 @@ const StorageTestLayer = Layer.scoped(
     const port = yield* findFreePort;
     const blobDir = yield* fs.makeTempDirectory({ prefix: "dossier-e2e-" }).pipe(Effect.orDie);
     const serverScope = yield* Scope.make();
-    yield* Layer.buildWithScope(StorageServerLayer.pipe(Layer.provide(Layer.setConfigProvider(makeStorageConfig(port, blobDir)))), serverScope).pipe(Effect.orDie);
+    yield* Layer.buildWithScope(StorageServerLayer.pipe(Layer.provide(Layer.setConfigProvider(makeStorageConfig(port, blobDir)))), serverScope).pipe(
+      Effect.orDie,
+    );
     yield* Effect.addFinalizer(() =>
-      Effect.all([Scope.close(serverScope, Exit.void).pipe(Effect.orDie), fs.remove(blobDir, { recursive: true }).pipe(Effect.orDie)], { discard: true }),
+      Effect.all([Scope.close(serverScope, Exit.void).pipe(Effect.orDie), fs.remove(blobDir, { recursive: true }).pipe(Effect.orDie)], {
+        discard: true,
+      }),
     );
     return port;
   }),
@@ -166,7 +182,10 @@ const ComputeTestLayer = Layer.scoped(
     const storagePort = yield* StorageTestPort;
     const computePort = yield* findFreePort;
     const serverScope = yield* Scope.make();
-    yield* Layer.buildWithScope(ComputeServerLayer.pipe(Layer.provide(Layer.setConfigProvider(makeComputeConfig(computePort, storagePort)))), serverScope).pipe(Effect.orDie);
+    yield* Layer.buildWithScope(
+      ComputeServerLayer.pipe(Layer.provide(Layer.setConfigProvider(makeComputeConfig(computePort, storagePort)))),
+      serverScope,
+    ).pipe(Effect.orDie);
     yield* Effect.addFinalizer(() => Scope.close(serverScope, Exit.void).pipe(Effect.orDie));
     return computePort;
   }),

@@ -52,10 +52,7 @@ class TestToken extends Context.Tag("my/TestToken")<TestToken, string>() {}
 
 const SessionLayer = Layer.scoped(TestToken, fullAuthFlow("shared_user").pipe(Effect.orDie));
 
-const MyTestLayer = Layer.mergeAll(
-  StorageIntegrationLayer,
-  SessionLayer.pipe(Layer.provide(StorageIntegrationLayer)),
-);
+const MyTestLayer = Layer.mergeAll(StorageIntegrationLayer, SessionLayer.pipe(Layer.provide(StorageIntegrationLayer)));
 
 layer(MyTestLayer)("My feature", (it) => {
   it.scoped("uses the shared session", () =>

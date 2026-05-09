@@ -41,9 +41,7 @@ export const rotateKeyAtom = ComputeRpc.runtime.fn<{
     );
 
     // Compute calls UpdateEncryptedDek internally during the finalizing phase
-    yield* Stream.runForEach(stream, (progress) =>
-      Effect.sync(() => onProgress(progress)),
-    );
+    yield* Stream.runForEach(stream, (progress) => Effect.sync(() => onProgress(progress)));
 
     // Return the updated session so the caller can commit it
     return buildUnlockedSession(session.token, newDek, session.username, newEncryptedDek, newDekIv, session.kdfParams);

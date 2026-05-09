@@ -41,7 +41,10 @@ function LoginForm() {
 
   const isWaiting = Result.isWaiting(result);
   const error = Result.isFailure(result)
-    ? Option.getOrElse(Option.map(Cause.failureOption(result.cause), (e) => e.message), () => "Login failed.")
+    ? Option.getOrElse(
+        Option.map(Cause.failureOption(result.cause), (e) => e.message),
+        () => "Login failed.",
+      )
     : null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -61,17 +64,27 @@ function LoginForm() {
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Username">
-          <input type="text" autoComplete="username" required value={username}
-            onChange={(e) => setUsername(e.target.value)} className="input" />
+          <input type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="input" />
         </Field>
         <Field label="Password">
-          <input type="password" autoComplete="current-password" required value={password}
-            onChange={(e) => setPassword(e.target.value)} className="input" />
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input"
+          />
         </Field>
         <Field label="Authenticator code">
           <input
-            type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6}
-            autoComplete="one-time-code" required value={totpCode}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            autoComplete="one-time-code"
+            required
+            value={totpCode}
             onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
             className="input text-center tracking-widest"
           />
@@ -100,7 +113,10 @@ function UnlockForm({ session }: { session: LockedSession }) {
 
   const isWaiting = Result.isWaiting(result);
   const error = Result.isFailure(result)
-    ? Option.getOrElse(Option.map(Cause.failureOption(result.cause), (e) => e.message), () => "Incorrect password.")
+    ? Option.getOrElse(
+        Option.map(Cause.failureOption(result.cause), (e) => e.message),
+        () => "Incorrect password.",
+      )
     : null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -125,8 +141,14 @@ function UnlockForm({ session }: { session: LockedSession }) {
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Password">
-          <input type="password" autoComplete="current-password" required value={password}
-            onChange={(e) => setPassword(e.target.value)} className="input" />
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input"
+          />
         </Field>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <button type="submit" disabled={isWaiting} className="btn-primary w-full">
@@ -135,8 +157,7 @@ function UnlockForm({ session }: { session: LockedSession }) {
       </form>
       <p className="mt-5 text-center text-sm text-muted-foreground">
         Not {session.username}?{" "}
-        <button type="button" onClick={() => setSession(SessionState.LoggedOut())}
-          className="font-medium text-primary hover:text-primary/80">
+        <button type="button" onClick={() => setSession(SessionState.LoggedOut())} className="font-medium text-primary hover:text-primary/80">
           Sign out
         </button>
       </p>

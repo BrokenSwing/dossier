@@ -1,6 +1,6 @@
-import { authenticator } from "otplib";
 import { describe, expect, layer } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import { authenticator } from "otplib";
 
 import { STORAGE_SESSION_HEADER, StorageIntegrationLayer, StorageRpcClient, TEST_KDF_PARAMS, fullAuthFlow } from "./setup.js";
 
@@ -80,9 +80,7 @@ layer(StorageIntegrationLayer)("Storage HTTP integration — auth", (it) => {
         });
         const secret = new URL(totpUri).searchParams.get("secret")!;
         yield* client.ConfirmTotp({ username: "login_bad_key", totpCode: authenticator.generate(secret) });
-        const exit = yield* Effect.exit(
-          client.Login({ username: "login_bad_key", authKey: "wrong-key", totpCode: authenticator.generate(secret) }),
-        );
+        const exit = yield* Effect.exit(client.Login({ username: "login_bad_key", authKey: "wrong-key", totpCode: authenticator.generate(secret) }));
         expect(exit._tag).toBe("Failure");
       }),
     );
@@ -90,7 +88,13 @@ layer(StorageIntegrationLayer)("Storage HTTP integration — auth", (it) => {
     it.scoped("rejects if TOTP not confirmed", () =>
       Effect.gen(function* () {
         const client = yield* StorageRpcClient;
-        yield* client.Register({ username: "login_unconfirmed", authKey: "test-auth-key", kdfParams: TEST_KDF_PARAMS, encryptedDek: "e", dekIv: "i" });
+        yield* client.Register({
+          username: "login_unconfirmed",
+          authKey: "test-auth-key",
+          kdfParams: TEST_KDF_PARAMS,
+          encryptedDek: "e",
+          dekIv: "i",
+        });
         const exit = yield* Effect.exit(client.Login({ username: "login_unconfirmed", authKey: "test-auth-key", totpCode: "000000" }));
         expect(exit._tag).toBe("Failure");
       }),

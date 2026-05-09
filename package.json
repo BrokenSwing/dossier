@@ -11,6 +11,9 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check"
   },
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  },
   "devDependencies": {
     "oxfmt": "^0.46.0",
     "oxlint": "^1.61.0"
@@ -18,8 +21,5 @@
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=9.0.0"
-  },
-  "dependencies": {
-    "concurrently": "^9.2.1"
   }
 }

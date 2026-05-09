@@ -1,6 +1,6 @@
+import type { Collection, CollectionId } from "@dossier/shared";
 import { describe, expect, it } from "vitest";
 
-import type { Collection, CollectionId } from "@dossier/shared";
 import {
   buildTree,
   openCreateCollectionDialog,

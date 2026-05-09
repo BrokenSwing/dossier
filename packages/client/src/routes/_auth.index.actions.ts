@@ -56,9 +56,7 @@ export const setEditTagInput = (state: EditDocumentDialogState, tagInput: string
 });
 
 export const addEditTag = (state: EditDocumentDialogState, tag: string): EditDocumentDialogState =>
-  state.selectedTags.includes(tag)
-    ? { ...state, tagInput: "" }
-    : { ...state, selectedTags: [...state.selectedTags, tag], tagInput: "" };
+  state.selectedTags.includes(tag) ? { ...state, tagInput: "" } : { ...state, selectedTags: [...state.selectedTags, tag], tagInput: "" };
 
 export const removeEditTag = (state: EditDocumentDialogState, tag: string): EditDocumentDialogState => ({
   ...state,
@@ -81,15 +79,13 @@ export const confirmDeleteAtom = Atom.writable<DocumentMeta | null, DocumentMeta
 
 // --- RPC mutations ---
 
-export const renameAtom = StorageRpc.runtime.fn<{ documentId: DocumentId; name: string }>()(
-  ({ documentId, name }, get) => {
-    const session = get(sessionAtom) as UnlockedSession;
-    return Effect.gen(function* () {
-      const client = yield* StorageRpc;
-      yield* client("RenameDocument", { documentId, name }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
-    }).pipe(Reactivity.mutation({ documents: [] }));
-  },
-);
+export const renameAtom = StorageRpc.runtime.fn<{ documentId: DocumentId; name: string }>()(({ documentId, name }, get) => {
+  const session = get(sessionAtom) as UnlockedSession;
+  return Effect.gen(function* () {
+    const client = yield* StorageRpc;
+    yield* client("RenameDocument", { documentId, name }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
+  }).pipe(Reactivity.mutation({ documents: [] }));
+});
 
 export const deleteAtom = StorageRpc.runtime.fn<{ documentId: DocumentId }>()(({ documentId }, get) => {
   const session = get(sessionAtom) as UnlockedSession;
@@ -106,11 +102,7 @@ export const updateTagsAtom = StorageRpc.runtime.fn<{
   const session = get(sessionAtom) as UnlockedSession;
   return Effect.gen(function* () {
     const client = yield* StorageRpc;
-    yield* client(
-      "UpdateDocumentTags",
-      { documentId, tagNames: tagNames as string[] },
-      { headers: { [STORAGE_SESSION_HEADER]: session.token } },
-    );
+    yield* client("UpdateDocumentTags", { documentId, tagNames: tagNames as string[] }, { headers: { [STORAGE_SESSION_HEADER]: session.token } });
   }).pipe(Reactivity.mutation({ documents: [] }));
 });
 

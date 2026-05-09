@@ -1,6 +1,6 @@
+import type { CollectionId, DocumentId, DocumentMeta } from "@dossier/shared";
 import { describe, expect, it } from "vitest";
 
-import type { CollectionId, DocumentId, DocumentMeta } from "@dossier/shared";
 import {
   addEditTag,
   openEditDocumentDialog,
